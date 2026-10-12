@@ -143,6 +143,9 @@ select{ cursor: pointer; }
 .pomo-ring::after{ content: ""; position: absolute; inset: 14px; background: #fbf7ef; border: 2px solid var(--ink); }
 .big-time{ position: relative; z-index: 1; font-family: var(--hand); font-size: 48px; letter-spacing: 2px; }
 .pomo-ring.running .big-time{ color: var(--ink); }
+.modes.kinds{ margin-bottom: 4px; }
+.modes.kinds .chip{ font-size: 18px; padding: 2px 12px; }
+.pomo-round{ text-align: center; color: var(--ink-2); font-size: 12px; margin: -6px 0 10px; }
 .pomo-btns{ display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
 .pomo-task-row{ display: flex; align-items: center; gap: 8px; margin: 16px 0 6px; color: var(--ink-2); font-size: 12px; }
 .pomo-task{ flex: 1; min-width: 0; color: var(--ink); }
@@ -160,7 +163,7 @@ select{ cursor: pointer; }
 .pomo-cfg summary{ cursor: pointer; }
 .cfg-grid{ display: grid; grid-template-columns: 1fr 1fr; gap: 8px 14px; margin-top: 8px; }
 .cfg-grid label{ display: flex; flex-direction: column; gap: 2px; font-size: 12px; }
-.cfg-grid input{ width: 100%; color: var(--ink); }
+.cfg-grid input, .cfg-grid select{ width: 100%; color: var(--ink); }
 
 /* 沉浸模式：只剩水景和一个大大的手写时间 */
 #immersive{ display: none; position: fixed; left: 0; right: 0; top: 96px; z-index: 8; text-align: center; pointer-events: none; }

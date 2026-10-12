@@ -625,8 +625,7 @@ function drawFar(g, t, ix, iy, w, h){
 /* 番茄钟挂轴上要显示的时间：没开番茄时显示下一段的完整时长 */
 function pomoText(){
   if (typeof Pomo === 'undefined' || !Store.data) return ['25:00', 0];
-  const ms = Pomo.remaining(), total = Pomo.dur(), s = Math.ceil(ms / 1000);
-  return [`${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`, 1 - ms / total];
+  return Pomo.display();   // 番茄钟 / 计时器是倒数，正计时是往上数
 }
 const DIGITS = {
   0: ['###', '#.#', '#.#', '#.#', '###'], 1: ['.#.', '##.', '.#.', '.#.', '###'], 2: ['###', '..#', '###', '#..', '###'],
