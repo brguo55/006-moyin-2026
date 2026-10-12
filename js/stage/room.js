@@ -4,7 +4,8 @@
    ------------------------------------------------------------
    rabbit 坐在一把悬浮的金椅子上（像诸葛亮的四轮车，但是飘着），椅子带着他飘来飘去：
    A / D 左右飘；空格跳（按得越久跳得越高），空中再按一次 = 二段跳；站在家具上按 S 下来；
-   E 互动（接口留好了，目前没有任何互动）；W 先空着（以后进门 / 上楼梯）
+   E 互动（目前只有门口的控制面板：打开设置）；W 先空着（以后进门 / 上楼梯）
+   打瞌睡的时候这些键都不管用，要点他一下才醒
    动画（sprites.js 的 RABBIT）：平时 idle_rabbit；番茄钟专注时 focus_rabbit_one（喝茶）
    rabbit 左右两边长得不一样（一边衣服、一边机械），不能镜像，所以暂时一直朝右
    家具的顶面都是「单向平台」：从下面能穿上去，从上面落下能站住（阁楼的木地板也是）
@@ -62,7 +63,9 @@ const Room = {
   drop: null, dropUntil: 0,
   keys: new Set(),
   napT: -1, lastInput: Date.now(),  // 打瞌睡：睡了多久（-1 = 醒着）；最后一次操控的时间（真实时间，毫秒）
+  napHinted: false,                 // 这次睡着以后，是不是已经提示过「点他叫醒」
   wasBreak: false,                  // 上一帧番茄钟是不是在休息（休息刚开始 → 伸懒腰）
+  stretchDue: false, breakNap: false,   // 休息开始了、懒腰还没伸；长休息开头要打的那个盹（被操控过就不打了）
   focusA: 'focus_one', focusT: 0, focusLoops: 0,   // 专注时轮流播喝茶 / 吃苹果
   cam: { x: 0, y: 0 }, lookAhead: 0, camReady: false, settled: false,
   bunny: { x: 1800, y: 860, facing: 1, jump: -1 },
@@ -87,18 +90,27 @@ const Room = {
 
   /* ---------- 输入 ---------- */
   keyDown(code){
-    if (['KeyA', 'KeyD', 'Space', 'KeyS', 'KeyE', 'KeyW'].includes(code)) this._touched();
-    if (code === 'KeyA' || code === 'KeyD'){ this.keys.add(code); return true; }
-    if (code === 'Space'){ if (!this.jumpHeld){ this.jumpBuf = BUFFER; } this.jumpHeld = true; return true; }
-    if (code === 'KeyS'){ this.dropDown(); return true; }
-    if (code === 'KeyE'){ this.interact(); return true; }
-    if (code === 'KeyW') return true;   // 先空着：以后进门 / 上楼梯
-    return false;
+    if (!['KeyA', 'KeyD', 'Space', 'KeyS', 'KeyE', 'KeyW'].includes(code)) return false;
+    if (this.dozing()){ this._napHint(); return true; }   // 打瞌睡：按键都不管用，要点他一下才醒
+    this._touched();
+    if (code === 'KeyA' || code === 'KeyD') this.keys.add(code);
+    else if (code === 'Space'){ if (!this.jumpHeld){ this.jumpBuf = BUFFER; } this.jumpHeld = true; }
+    else if (code === 'KeyS') this.dropDown();
+    else if (code === 'KeyE') this.interact();
+    return true;   // W 先空着：以后进门 / 上楼梯
   },
   keyUp(code){ this.keys.delete(code); if (code === 'Space') this.jumpHeld = false; },
   clearKeys(){ this.keys.clear(); this.jumpHeld = false; },
-  /* 操控了 rabbit：记下时间；正在打瞌睡就直接醒（不播 wake，免得按键没反应） */
-  _touched(){ this.lastInput = Date.now(); this.napT = -1; },
+  /* 在打瞌睡，或者刚被点醒、还在醒神（wake 播完才能动） */
+  dozing(){ return this.napT >= 0 || !!(this.act && this.act.kind === 'wake'); },
+  /* 睡着时按了键：提示一下要点他（每次睡着只提示一次） */
+  _napHint(){
+    if (this.napT < 0 || this.napHinted) return;
+    this.napHinted = true;
+    if (typeof toast === 'function') toast('rabbit 在打瞌睡，点他一下叫醒');
+  },
+  /* 操控了 / 点醒了 rabbit：记下时间、醒过来；长休息开头的那个盹也不用打了 */
+  _touched(){ this.lastInput = Date.now(); this.napT = -1; this.breakNap = false; },
   /* E：互动 —— 看 rabbit 面前是什么。现在只有门口的控制面板：打开设置 */
   interact(){ if (this.nearPanel) this._openSettings(); },
   _openSettings(){ beep(); if (typeof openSettings === 'function') openSettings(); },
@@ -167,7 +179,7 @@ const Room = {
   /* ---------- 每帧 ---------- */
   update(dt){
     const t = (this.t += dt);
-    const dir = (this.keys.has('KeyD') ? 1 : 0) - (this.keys.has('KeyA') ? 1 : 0);
+    const dir = this.dozing() ? 0 : (this.keys.has('KeyD') ? 1 : 0) - (this.keys.has('KeyA') ? 1 : 0);   // 睡着时不听方向键
     this.jumpBuf = Math.max(0, this.jumpBuf - dt);
     this._physics(dt, dir);
     const [cx, , cw] = CTRL;
@@ -175,12 +187,15 @@ const Room = {
     // 椅子是飘着的，走起来不扬灰
     const walking = this.grounded && Math.abs(this.vx) > 20;
     this.walking = walking;
-    // 番茄钟：专注时不睡、轮流播喝茶和吃苹果；休息刚开始伸个懒腰；长休息就打个盹
+    // 番茄钟：专注时不睡、轮流播喝茶和吃苹果；休息刚开始伸个懒腰；长休息开头打个盹
     const P = typeof Pomo !== 'undefined' ? Pomo.t : null;
     const focusOn = !!(P && P.running && P.mode === 'focus'), breakOn = !!(P && P.running && P.mode !== 'focus');
     this.focusOn = focusOn;
-    if (breakOn && !this.wasBreak && this.grounded){ this.napT = -1; this._play('stretch'); }
+    if (breakOn && !this.wasBreak){ this.stretchDue = true; this.breakNap = P.mode === 'long'; }
+    if (!breakOn) this.stretchDue = this.breakNap = false;
     this.wasBreak = breakOn;
+    // 懒腰等手上的动作做完再伸（番茄刚完成时先拍完手）；睡着的话先醒
+    if (this.stretchDue && this.grounded && !this.act){ this.stretchDue = false; this.napT = -1; this._play('stretch'); }
     if (focusOn){
       this.napT = -1;
       const a = RABBIT.anims[this.focusA];
@@ -191,11 +206,14 @@ const Room = {
         }
       }
     }
-    // 打瞌睡：NAP_AFTER 秒没操控（或者番茄钟长休息时）→ 睡着。站在地上、家具、阁楼、床上都行，只要不在空中
+    // 打瞌睡：NAP_AFTER 秒没操控（或者长休息刚开始）→ 睡着。站在地上、家具、阁楼、床上都行，只要不在空中
     // 用真实时间算：窗口被挡住时浏览器会暂停画面，按帧算的话等多久都不会睡
+    // 睡着以后按键都不管用（keyDown），点他一下才醒（click → wake）
     if (this.napT >= 0) this.napT += dt;
     else if (this.grounded && !this.act && !focusOn && Math.abs(this.vx) < 1
-      && (Date.now() - this.lastInput > NAP_AFTER * 1000 || (breakOn && P.mode === 'long'))){ this.napT = 0; this.facing = 1; }
+      && (Date.now() - this.lastInput > NAP_AFTER * 1000 || this.breakNap)){
+      this.napT = 0; this.facing = 1; this.napHinted = false; this.breakNap = false;
+    }
     // 兔耳小鸟：在 rabbit 身后上方飞着跟随
     const b = this.bunny;
     const [tx, ty] = [this.x - this.facing * 58, this.y - 118];
