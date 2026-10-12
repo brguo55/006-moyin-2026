@@ -1,6 +1,6 @@
 "use strict";
 /* ============================================================
-   app/settings.js：设置页 —— 备份（最重要）/ 面板显示 / 小房间 / 声音 / 安装 / 关于
+   app/settings.js：设置页 —— 备份（最重要）/ 面板显示 / 番茄钟 / 小房间 / 声音 / 安装 / 关于
    ============================================================ */
 
 const Settings = {
@@ -67,6 +67,13 @@ const Settings = {
       h('div.feature-list', null, ...TABS.filter(t => t.label).map(t =>
         h('label.switch', null, checkBox(!hidden.includes(t.id), () => toggle(t.id), t.label), ' ' + t.label))),
       h('p.muted', null, '取消勾选只是不显示，里面的数据都还在，重新勾上就回来了。「设置」会一直显示。')));
+
+    /* ---------- 番茄钟：时长可以精确到秒 ---------- */
+    kids.push(h('section.set', null,
+      h('h3', null, '番茄钟'),
+      h('p', null, '时长按「分:秒」填：25 或 25:00 是 25 分钟，25:05 是 25 分 5 秒。'),
+      h('div.cfg-grid', null, ...Pomo.cfgFields()),
+      h('p.muted', null, '和番茄钟页面里的「时长设置」是同一份，改哪边都行。正在进行的那一段不受影响，下一段开始生效。')));
 
     /* ---------- 小房子 ---------- */
     kids.push(h('section.set', null,

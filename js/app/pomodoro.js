@@ -7,17 +7,26 @@
    进行中的计时存在 KV 'timer'：刷新 / 关掉再开都能接着走；离开期间到点的番茄照样记上。
    ============================================================ */
 
+/* 时长（秒）↔「分:秒」：1505 ↔ "25:05"；只填一个数就当分钟（"25" = 25:00） */
+const fmtDur = sec => `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, '0')}`;
+function parseDur(str){
+  const m = String(str).trim().replace('：', ':').match(/^(\d{1,3})(?::(\d{1,2}))?$/);
+  if (!m) return null;
+  const s = m[2] == null ? 0 : +m[2];
+  return s < 60 ? +m[1] * 60 + s : null;
+}
+
 const MODES = {
-  focus: { name: '专注',   key: 'focusMin' },
-  short: { name: '短休息', key: 'shortMin' },
-  long:  { name: '长休息', key: 'longMin' },
+  focus: { name: '专注',   key: 'focusSec', max: 180 * 60 },
+  short: { name: '短休息', key: 'shortSec', max: 60 * 60 },
+  long:  { name: '长休息', key: 'longSec',  max: 120 * 60 },
 };
 
 const Pomo = {
   t: { mode: 'focus', running: false, endAt: 0, left: 25 * 60e3, startedAt: 0, cycle: 0, taskId: null },
   el: {},
 
-  dur(mode = this.t.mode){ return (Store.data.settings[MODES[mode].key] || 25) * 60e3; },
+  dur(mode = this.t.mode){ return (Store.data.settings[MODES[mode].key] || 1500) * 1000; },
   remaining(){ return this.t.running ? Math.max(0, this.t.endAt - Date.now()) : this.t.left; },
   _save(){ KV.set('timer', this.t); },
 
@@ -72,7 +81,7 @@ const Pomo = {
     const t = this.t, end = t.running ? t.endAt : Date.now();
     let msg;
     if (t.mode === 'focus'){
-      const minutes = Math.round(this.dur('focus') / 60e3);
+      const minutes = Math.round(this.dur('focus') / 6e3) / 10;   // 精确到 0.1 分钟（时长可以带秒）
       Store.update(d => d.pomos.push({ id: uid(), start: t.startedAt || end - this.dur('focus'), end, minutes, taskId: t.taskId }));
       t.cycle++;
       msg = ['专注完成', `完成第 ${this._today().count} 个番茄，休息一下吧。`];
@@ -137,7 +146,7 @@ const Pomo = {
     const td = this._today(), total = Store.data.pomos.length;
     e.stats.replaceChildren(
       h('div.stat', null, h('b', null, td.count), h('span', null, '今日番茄')),
-      h('div.stat', null, h('b', null, td.minutes), h('span', null, '今日专注（分钟）')),
+      h('div.stat', null, h('b', null, Math.round(td.minutes)), h('span', null, '今日专注（分钟）')),
       h('div.stat', null, h('b', null, total), h('span', null, '累计番茄')),
     );
     const days = [...Array(7)].map((_, i) => addDays(dayKey(), i - 6));
@@ -148,17 +157,36 @@ const Pomo = {
       h('div.wb-n', null, counts[i] || ''),
       h('div.wb-d', null, i === 6 ? '今' : WEEK[keyToDate(k).getDay()]))));
 
-    // 时长设置
-    const grid = e.cfg.querySelector('.cfg-grid');
-    const num = (label, key, min, max) => h('label', null, label,
-      h('input', { type: 'number', min, max, value: s[key], onchange: ev => {
-        const v = Math.min(max, Math.max(min, Math.round(+ev.target.value) || s[key]));
-        Store.update(d => { d.settings[key] = v; });
-        if (!this.t.running && !this.t.startedAt) this.setMode(this.t.mode);   // 还没开始的这段按新时长重置
-      } }));
-    grid.replaceChildren(num('专注（分钟）', 'focusMin', 1, 120), num('短休息', 'shortMin', 1, 60),
-      num('长休息', 'longMin', 1, 90), num('几个番茄后长休息', 'longEvery', 2, 12));
+    // 时长设置（设置页里也有同样的一份）
+    e.cfg.querySelector('.cfg-grid').replaceChildren(...this.cfgFields());
     this.paint();
+  },
+  /* 时长设置的几个输入框：专注 / 短休息 / 长休息填「分:秒」（25、25:00、25:05 都行），外加几个番茄后长休息 */
+  cfgFields(){
+    const s = Store.data.settings;
+    const afterChange = () => { if (!this.t.running && !this.t.startedAt) this.setMode(this.t.mode); };   // 还没开始的这段按新时长重置
+    const dur = (label, mode) => {
+      const { key, max } = MODES[mode];
+      return h('label', null, label,
+        h('input.dur-input', { type: 'text', inputMode: 'numeric', value: fmtDur(s[key]), placeholder: '25:00', title: '填「分:秒」，比如 25:00 或 25:05',
+          onkeydown: ev => { if (ev.key === 'Enter') ev.target.blur(); },
+          onchange: ev => {
+            const v = parseDur(ev.target.value);
+            if (v == null || v < 10 || v > max){
+              toast(`时长要像 25:00 或 25:05 这样填，在 0:10 到 ${fmtDur(max)} 之间`);
+              ev.target.value = fmtDur(s[key]); return;
+            }
+            ev.target.value = fmtDur(v);
+            Store.update(d => { d.settings[key] = v; });
+            afterChange();
+          } }));
+    };
+    return [dur('专注（分:秒）', 'focus'), dur('短休息', 'short'), dur('长休息', 'long'),
+      h('label', null, '几个番茄后长休息', h('input', { type: 'number', min: 2, max: 12, value: s.longEvery, onchange: ev => {
+        const v = Math.min(12, Math.max(2, Math.round(+ev.target.value) || s.longEvery));
+        ev.target.value = v;
+        Store.update(d => { d.settings.longEvery = v; });
+      } }))];
   },
   /* 每次滴答只更新数字（便宜） */
   paint(){

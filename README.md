@@ -7,7 +7,7 @@ A planner that runs in the browser: tasks, a pomodoro timer and habit tracking, 
 ## Features
 
 - **Tasks** — lists, a Today view, search, notes and due dates. Type 明天 / 周五 / 下周一 at the start or end of a task to set its due date.
-- **Pomodoro** — focus, short and long breaks, linked to a task, daily and weekly stats, and an immersive full-screen mode. It stays accurate in a background tab and resumes after a reload.
+- **Pomodoro** — focus, short and long breaks with durations to the second (e.g. 25:05, editable on the Pomodoro page or in Settings), linked to a task, daily and weekly stats, and an immersive full-screen mode. It stays accurate in a background tab and resumes after a reload.
 - **轻重 (Eisenhower matrix)** — tag tasks 马上做 / 排时间 / 顺手做 / 放一放 (important × urgent). Add tasks inside a quadrant and drag them between quadrants.
 - **Habits** — daily check-ins, current and best streaks, and a 22-week grid.
 - **倒数 (countdowns)** — days until an exam, trip or deadline. Yearly ones (birthdays, anniversaries) repeat and show which year it is; past dates count up.

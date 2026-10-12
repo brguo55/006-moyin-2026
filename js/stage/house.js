@@ -640,8 +640,9 @@ function drawHouseLive(g, t, ix, iy){
   const [px, py, pw] = POMO_SCROLL;
   if (X(px) < 460 && X(px + pw) > 0 && Y(py) < 260 && Y(py + 60) > 0){
     const [txt, frac] = pomoText(), running = typeof Pomo !== 'undefined' && Pomo.t.running;
-    [txt.slice(0, 2), txt.slice(3, 5)].forEach((pair, row) => {
-      [...pair].forEach((ch, i) => DIGITS[ch].forEach((r, j) => { for (let k = 0; k < 3; k++) if (r[k] === '#') rect(X(px + 6 + i * 8 + k * 2), Y(py + 7 + row * 14 + j * 2), 2, 2, HC.ink); }));
+    txt.split(':').forEach((part, row) => {   // 第一行分、第二行秒；分钟可能是三位数（时长最多 180 分钟）
+      const x0 = px + Math.round((pw - part.length * 8 + 2) / 2);
+      [...part].forEach((ch, i) => DIGITS[ch].forEach((r, j) => { for (let k = 0; k < 3; k++) if (r[k] === '#') rect(X(x0 + i * 8 + k * 2), Y(py + 7 + row * 14 + j * 2), 2, 2, HC.ink); }));
     });
     if (!running || (t % 1) < 0.5){ dot(X(px + 12), Y(py + 27), HC.red); }
     rect(X(px + 4), Y(py + 48), pw - 8, 2, HC.paperDk); rect(X(px + 4), Y(py + 48), Math.round((pw - 8) * frac), 2, HC.red);
