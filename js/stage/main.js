@@ -27,8 +27,8 @@ function frame(now){
   drawMuteBtn();
 }
 
-/* 完成一件事（任务 / 打卡 / 番茄）：rabbit 开心地蹦一下、冒爱心 */
-function celebrate(){ Room.doCheer(); }
+/* 完成一件事（任务 / 打卡 / 番茄）：rabbit 拍手庆祝、冒爱心 */
+function celebrate(){ Room.celebrate(); }
 
 /* ---------- 交互：点 rabbit / 点小鸟 / 点门口的控制面板 / 色板 / 静音 ---------- */
 cv.addEventListener('pointerdown', e => {

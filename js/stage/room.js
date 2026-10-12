@@ -30,6 +30,7 @@ const APEX_V = 90, APEX_GRAV = 0.55;   // 按住空格时，快到最高点那�
 const AIR_CONTROL = 15;                // 空中转向的灵敏度（地面是 22）
 const COYOTE = 0.09, BUFFER = 0.12;    // 走出边缘后还能起跳的时间 / 提前按跳的缓冲
 const FG_PAR = 0.3, FAR_PAR = 0.5;     // 前景比中景多移动 30%；窗外景色只移动一半
+const NAP_AFTER = 30;                  // 多少秒没操控 rabbit，他就打瞌睡（正式版可以调长）
 
 /* ---------- 能站的面（单向平台）[x0, x1, y] ---------- */
 const PLATS = [];
@@ -60,7 +61,9 @@ const Room = {
   groundY: FLOOR_Y,                 // 最近一次站稳的高度（镜头按它定高，小跳时不上下晃）
   drop: null, dropUntil: 0,
   keys: new Set(),
-  cheer: -1, cheered: false,
+  napT: -1, lastInput: 0,           // 打瞌睡：睡了多久（-1 = 醒着）；最后一次操控的时间
+  wasBreak: false,                  // 上一帧番茄钟是不是在休息（休息刚开始 → 伸懒腰）
+  focusA: 'focus_one', focusT: 0, focusLoops: 0,   // 专注时轮流播喝茶 / 吃苹果
   cam: { x: 0, y: 0 }, lookAhead: 0, camReady: false, settled: false,
   bunny: { x: 1800, y: 860, facing: 1, jump: -1 },
   hearts: [], puffs: [],
@@ -84,6 +87,7 @@ const Room = {
 
   /* ---------- 输入 ---------- */
   keyDown(code){
+    if (['KeyA', 'KeyD', 'Space', 'KeyS', 'KeyE', 'KeyW'].includes(code)) this._touched();
     if (code === 'KeyA' || code === 'KeyD'){ this.keys.add(code); return true; }
     if (code === 'Space'){ if (!this.jumpHeld){ this.jumpBuf = BUFFER; } this.jumpHeld = true; return true; }
     if (code === 'KeyS'){ this.dropDown(); return true; }
@@ -93,6 +97,8 @@ const Room = {
   },
   keyUp(code){ this.keys.delete(code); if (code === 'Space') this.jumpHeld = false; },
   clearKeys(){ this.keys.clear(); this.jumpHeld = false; },
+  /* 操控了 rabbit：记下时间；正在打瞌睡就直接醒（不播 wake，免得按键没反应） */
+  _touched(){ this.lastInput = this.t; this.napT = -1; },
   /* E：互动 —— 看 rabbit 面前是什么。现在只有门口的控制面板：打开设置 */
   interact(){ if (this.nearPanel) this._openSettings(); },
   _openSettings(){ beep(); if (typeof openSettings === 'function') openSettings(); },
@@ -114,20 +120,41 @@ const Room = {
   click(px, py){
     const who = this.hit(px, py);
     if (who === 'panel') this._openSettings();
-    else if (who === 'rabbit') this.doCheer();
+    else if (who === 'rabbit'){
+      if (this.napT >= 0){ this._touched(); this._play('wake'); }   // 睡着时被点：醒过来
+      else this.doCheer();                                           // 平时被点：冒红色爱心
+    }
     else if (who === 'bunny'){ this.bunny.jump = 0; this._burst(this.bunny.x, this.bunny.y - 14, 2); chirp(); }
     return !!who;
   },
   /* 画面「安静」：没在操作、rabbit 停着、镜头和小鸟都到位、没有粒子 → 主循环可以降帧省电 */
   quiet(){
-    return !this.keys.size && this.jumpBuf <= 0 && this.grounded && Math.abs(this.vx) < 1 && this.cheer < 0
+    return !this.keys.size && this.jumpBuf <= 0 && this.grounded && Math.abs(this.vx) < 1
       && !this.hearts.length && !this.puffs.length && !this.act && this.settled;
   },
-  /* 开心：椅子往上一蹦、冒爱心（以后换成画师画的 done_rabbit） */
+  /* 被点了一下：叮一声，冒红色爱心 */
   doCheer(){
-    if (this.cheer >= 0 && this.cheer < 0.5) return;
-    this.cheer = 0; this.cheered = false;
-    if (this.grounded){ this.vy = -300; this.grounded = false; this.ground = null; }
+    clink();
+    this._burst(this.x + 6, this.y - 128, 5);
+  },
+  /* 完成一件事（番茄钟、任务打勾、习惯打卡）：拍手庆祝 + 爱心；睡着的话也会醒 */
+  celebrate(){
+    this._touched();
+    if (this.grounded) this._play('done');
+    this.doCheer();
+  },
+  /* 播一段一次性的动作；只有朝右的动画，播之前先转成朝右 */
+  _play(kind){
+    this.act = { kind, t: 0 };
+    if (RABBIT.anims[kind]) this.facing = 1;
+  },
+  /* 一次性动作有多长（秒） */
+  _actLen(kind){
+    const R = RABBIT, A = R.anims, sum = (a, frames) => frames.reduce((s, f) => s + a.ms[f], 0) / 1000;
+    if (kind === 'takeoff') return sum(A.jump_right, R.TAKEOFF);
+    if (kind === 'boost') return sum(A.sec_right, R.BOOST);
+    if (kind === 'land') return sum(A.jump_right, R.LAND);
+    return A[kind].total;
   },
   _burst(x, y, n){
     for (let i = 0; i < n; i++) this.hearts.push({ x: x + rnd(-6, 6), y: y + rnd(-4, 4), vx: rnd(-14, 14), vy: rnd(-48, -30),
@@ -148,15 +175,26 @@ const Room = {
     // 椅子是飘着的，走起来不扬灰
     const walking = this.grounded && Math.abs(this.vx) > 20;
     this.walking = walking;
-    // 开心：到 0.3 时「叮」+ 冒爱心
-    if (this.cheer >= 0){
-      this.cheer += dt / 1.3;
-      if (!this.cheered && this.cheer >= 0.3){
-        this.cheered = true; clink();
-        this._burst(this.x + 6, this.y - 128, 5);
+    // 番茄钟：专注时不睡、轮流播喝茶和吃苹果；休息刚开始伸个懒腰；长休息就打个盹
+    const P = typeof Pomo !== 'undefined' ? Pomo.t : null;
+    const focusOn = !!(P && P.running && P.mode === 'focus'), breakOn = !!(P && P.running && P.mode !== 'focus');
+    this.focusOn = focusOn;
+    if (breakOn && !this.wasBreak && this.grounded){ this.napT = -1; this._play('stretch'); }
+    this.wasBreak = breakOn;
+    if (focusOn){
+      this.napT = -1;
+      const a = RABBIT.anims[this.focusA];
+      if ((this.focusT += dt) >= a.total){
+        this.focusT -= a.total;
+        if (++this.focusLoops >= (this.focusA === 'focus_one' ? 12 : 8)){   // 喝茶约 13 秒、吃苹果约 11 秒，换着来
+          this.focusA = this.focusA === 'focus_one' ? 'focus_two' : 'focus_one'; this.focusT = 0; this.focusLoops = 0;
+        }
       }
-      if (this.cheer > 1) this.cheer = -1;
     }
+    // 打瞌睡：NAP_AFTER 秒没操控（或者番茄钟长休息时）→ 睡着
+    if (this.napT >= 0) this.napT += dt;
+    else if (this.grounded && !this.act && !focusOn && Math.abs(this.vx) < 1
+      && (t - this.lastInput > NAP_AFTER || (breakOn && P.mode === 'long'))){ this.napT = 0; this.facing = 1; }
     // 兔耳小鸟：在 rabbit 身后上方飞着跟随
     const b = this.bunny;
     const [tx, ty] = [this.x - this.facing * 58, this.y - 118];
@@ -178,8 +216,7 @@ const Room = {
     // 一次性动作播完就清掉
     if (this.act){
       this.act.t += dt;
-      const len = { takeoff: RABBIT.TAKEOFF, boost: RABBIT.BOOST, land: RABBIT.LAND }[this.act.kind].length * 0.1;
-      if (this.act.t > len + 0.05) this.act = null;
+      if (this.act.t > this._actLen(this.act.kind)) this.act = null;
     }
     this._camera(dt, walking);
     this.settled = this.settled && birdSettled;
@@ -288,26 +325,28 @@ const Room = {
     ctx.restore();
   },
   /* 现在画哪一帧：{ anim, i（第几帧）, dy（往下挪几像素，抵消画里自带的升高）}
-     空中：起跳 / 二段跳先播一遍，之后停在「往上」或「往下掉」那一帧；落地：往下一沉再回来；
-     平时：番茄钟专注中 → 喝茶（只有朝右），否则待机（分左右） */
+     空中：起跳 / 二段跳先播一遍，之后停在「往上」或「往下掉」那一帧；
+     地上：先看有没有正在播的一次性动作（落地、被点醒、拍手、伸懒腰），再看打瞌睡、番茄钟专注，最后是待机 */
   _frame(){
     const R = RABBIT, A = R.anims, dir = this.facing < 0 ? 'left' : 'right', act = this.act;
-    const play = (frames, ms) => {   // 一次性动作播到第几帧；播完了返回 -1
+    const seq = (a, frames) => {   // 一次性动作（只播 frames 这几帧）播到第几帧；播完返回 -1
       let acc = 0;
-      for (const f of frames){ acc += ms[f] / 1000; if (act.t < acc) return f; }
+      for (const f of frames){ acc += a.ms[f] / 1000; if (act.t < acc) return f; }
       return -1;
     };
+    const jump = A['jump_' + dir];
     if (!this.grounded){
-      if (act && act.kind === 'boost'){ const f = play(R.BOOST, R.MS.sec); if (f >= 0) return { anim: A['sec_' + dir], i: f, dy: R.LIFT.sec[f] }; }
-      if (act && act.kind === 'takeoff'){ const f = play(R.TAKEOFF, R.MS.jump); if (f >= 0) return { anim: A['jump_' + dir], i: f, dy: R.LIFT.jump[f] }; }
+      if (act && act.kind === 'boost'){ const a = A['sec_' + dir], f = seq(a, R.BOOST); if (f >= 0) return { anim: a, i: f, dy: R.LIFT.sec[f] }; }
+      if (act && act.kind === 'takeoff'){ const f = seq(jump, R.TAKEOFF); if (f >= 0) return { anim: jump, i: f, dy: R.LIFT.jump[f] }; }
       const f = this.vy < 0 ? R.RISE : R.FALL;
-      return { anim: A['jump_' + dir], i: f, dy: R.LIFT.jump[f] };
+      return { anim: jump, i: f, dy: R.LIFT.jump[f] };
     }
-    if (act && act.kind === 'land'){ const f = play(R.LAND, R.MS.jump); if (f >= 0) return { anim: A['jump_' + dir], i: f, dy: 0 }; }
-    const focus = typeof Pomo !== 'undefined' && Pomo.t.running && Pomo.t.mode === 'focus';
-    if (focus) return { anim: A.focus_right, i: Math.floor(this.t * 10) % A.focus_right.n, dy: 0 };
+    if (act && act.kind === 'land'){ const f = seq(jump, R.LAND); if (f >= 0) return { anim: jump, i: f, dy: 0 }; }
+    if (act && A[act.kind]){ const f = rabbitFrame(A[act.kind], act.t, -1); if (f >= 0) return { anim: A[act.kind], i: f, dy: 0 }; }
+    if (this.napT >= 0) return { anim: A.nap, i: rabbitFrame(A.nap, this.napT, R.NAP_LOOP), dy: 0 };
+    if (this.focusOn) return { anim: A[this.focusA], i: rabbitFrame(A[this.focusA], this.focusT), dy: 0 };
     const idle = A['idle_' + dir];
-    return { anim: idle, i: Math.floor(this.t * 10) % idle.n, dy: 0 };
+    return { anim: idle, i: rabbitFrame(idle, this.t), dy: 0 };
   },
   _drawRabbit(q){
     const x = q(this.x / PX), y = q(this.y / PX), R = RABBIT, fr = this._frame();
@@ -318,7 +357,7 @@ const Room = {
     ctx.fillStyle = `rgba(255,230,160,${glow + 0.15})`; ctx.fillRect(x - 4, y - 1, 8, 1);
     const img = fr.anim.img;
     if (!img.complete || !img.naturalWidth) return;
-    const ax = fr.anim === R.anims.focus_right || this.facing >= 0 ? R.AX.right : R.AX.left;
+    const ax = fr.anim.left ? R.AX.left : R.AX.right;
     ctx.drawImage(img, fr.i * R.W, 0, R.W, R.H, x - ax, y - R.HOVER - R.BASE - 1 + fr.dy, R.W, R.H);
   },
   _drawBunny(q){
