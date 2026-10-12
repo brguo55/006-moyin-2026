@@ -30,7 +30,7 @@ const APEX_V = 90, APEX_GRAV = 0.55;   // 按住空格时，快到最高点那�
 const AIR_CONTROL = 15;                // 空中转向的灵敏度（地面是 22）
 const COYOTE = 0.09, BUFFER = 0.12;    // 走出边缘后还能起跳的时间 / 提前按跳的缓冲
 const FG_PAR = 0.3, FAR_PAR = 0.5;     // 前景比中景多移动 30%；窗外景色只移动一半
-const NAP_AFTER = 30;                  // 多少秒没操控 rabbit，他就打瞌睡（正式版可以调长）
+const NAP_AFTER = 30;                  // 多少秒没操控 rabbit，他就打瞌睡（正式版可以调长）；按真实时间算，切到别的窗口也照样计时
 
 /* ---------- 能站的面（单向平台）[x0, x1, y] ---------- */
 const PLATS = [];
@@ -61,7 +61,7 @@ const Room = {
   groundY: FLOOR_Y,                 // 最近一次站稳的高度（镜头按它定高，小跳时不上下晃）
   drop: null, dropUntil: 0,
   keys: new Set(),
-  napT: -1, lastInput: 0,           // 打瞌睡：睡了多久（-1 = 醒着）；最后一次操控的时间
+  napT: -1, lastInput: Date.now(),  // 打瞌睡：睡了多久（-1 = 醒着）；最后一次操控的时间（真实时间，毫秒）
   wasBreak: false,                  // 上一帧番茄钟是不是在休息（休息刚开始 → 伸懒腰）
   focusA: 'focus_one', focusT: 0, focusLoops: 0,   // 专注时轮流播喝茶 / 吃苹果
   cam: { x: 0, y: 0 }, lookAhead: 0, camReady: false, settled: false,
@@ -98,7 +98,7 @@ const Room = {
   keyUp(code){ this.keys.delete(code); if (code === 'Space') this.jumpHeld = false; },
   clearKeys(){ this.keys.clear(); this.jumpHeld = false; },
   /* 操控了 rabbit：记下时间；正在打瞌睡就直接醒（不播 wake，免得按键没反应） */
-  _touched(){ this.lastInput = this.t; this.napT = -1; },
+  _touched(){ this.lastInput = Date.now(); this.napT = -1; },
   /* E：互动 —— 看 rabbit 面前是什么。现在只有门口的控制面板：打开设置 */
   interact(){ if (this.nearPanel) this._openSettings(); },
   _openSettings(){ beep(); if (typeof openSettings === 'function') openSettings(); },
@@ -191,10 +191,11 @@ const Room = {
         }
       }
     }
-    // 打瞌睡：NAP_AFTER 秒没操控（或者番茄钟长休息时）→ 睡着
+    // 打瞌睡：NAP_AFTER 秒没操控（或者番茄钟长休息时）→ 睡着。站在地上、家具、阁楼、床上都行，只要不在空中
+    // 用真实时间算：窗口被挡住时浏览器会暂停画面，按帧算的话等多久都不会睡
     if (this.napT >= 0) this.napT += dt;
     else if (this.grounded && !this.act && !focusOn && Math.abs(this.vx) < 1
-      && (t - this.lastInput > NAP_AFTER || (breakOn && P.mode === 'long'))){ this.napT = 0; this.facing = 1; }
+      && (Date.now() - this.lastInput > NAP_AFTER * 1000 || (breakOn && P.mode === 'long'))){ this.napT = 0; this.facing = 1; }
     // 兔耳小鸟：在 rabbit 身后上方飞着跟随
     const b = this.bunny;
     const [tx, ty] = [this.x - this.facing * 58, this.y - 118];
