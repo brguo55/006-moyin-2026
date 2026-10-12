@@ -23,6 +23,8 @@ function frame(now){
   ctx.imageSmoothingEnabled = false;
   drawBackground();
   Room.draw();
+  // rabbit 打瞌睡：纸、画框、房间都暗一点（色板、静音按钮和右边的面板不受影响）
+  if (Room.dim) fillR(0, 0, W, H, `rgba(16,18,38,${(Room.dim * 0.25).toFixed(3)})`);
   drawSwatches();
   drawMuteBtn();
 }

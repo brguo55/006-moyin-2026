@@ -64,6 +64,7 @@ const Room = {
   keys: new Set(),
   napT: -1, lastInput: Date.now(),  // 打瞌睡：睡了多久（-1 = 醒着）；最后一次操控的时间（真实时间，毫秒）
   napHinted: false,                 // 这次睡着以后，是不是已经提示过「点他叫醒」
+  dim: 0,                           // 打瞌睡时场景暗下来多少（0 – 1，main.js 画）
   wasBreak: false,                  // 上一帧番茄钟是不是在休息（休息刚开始 → 伸懒腰）
   stretchDue: false, breakNap: false,   // 休息开始了、懒腰还没伸；长休息开头要打的那个盹（被操控过就不打了）
   focusA: 'focus_one', focusT: 0, focusLoops: 0,   // 专注时轮流播喝茶 / 吃苹果
@@ -214,6 +215,10 @@ const Room = {
       && (Date.now() - this.lastInput > NAP_AFTER * 1000 || this.breakNap)){
       this.napT = 0; this.facing = 1; this.napHinted = false; this.breakNap = false;
     }
+    // 睡着了，场景慢慢暗下来；醒了很快亮回去
+    const asleep = this.napT >= 0;
+    this.dim += ((asleep ? 1 : 0) - this.dim) * Math.min(1, dt * (asleep ? 1.2 : 4));
+    if (!asleep && this.dim < 0.005) this.dim = 0;
     // 兔耳小鸟：在 rabbit 身后上方飞着跟随
     const b = this.bunny;
     const [tx, ty] = [this.x - this.facing * 58, this.y - 118];
