@@ -140,8 +140,8 @@ const Tasks = {
       chip('today', '今天', undone.filter(t => t.due && t.due <= today).length),
       chip('all', '全部', undone.length),
       ...d.lists.map(l => chip(l.id, l.name, undone.filter(t => t.listId === l.id).length)),
-      h('button.chip.add', { title: '新建清单', onclick: () => {
-        const name = (prompt('新清单的名字') || '').trim();
+      h('button.chip.add', { title: '新建清单', onclick: async () => {
+        const name = await ask({ title: '新清单', input: true, placeholder: '清单的名字，比如「工作」', ok: '新建' });
         if (!name) return;
         const id = uid();
         Store.update(dd => dd.lists.push({ id, name, createdAt: Date.now() }));
@@ -151,12 +151,12 @@ const Tasks = {
     // 自建清单：可改名 / 删除（任务挪回收件箱）
     const cur = d.lists.find(l => l.id === this.view && l.id !== 'inbox');
     this.el.listTools.replaceChildren(...(cur ? [
-      h('button.link', { onclick: () => {
-        const name = (prompt('清单改名为', cur.name) || '').trim();
-        if (name) Store.update(dd => { dd.lists.find(l => l.id === cur.id).name = name; });
+      h('button.link', { onclick: async () => {
+        const name = await ask({ title: '清单改名', input: true, value: cur.name, ok: '改名' });
+        if (name) Store.update(dd => { const l = dd.lists.find(x => x.id === cur.id); if (l) l.name = name; });
       } }, '改名'),
-      h('button.link', { onclick: () => {
-        if (!confirm(`删除清单「${cur.name}」？里面的任务会挪到收件箱。`)) return;
+      h('button.link', { onclick: async () => {
+        if (!await ask({ title: '删除清单', text: `删除清单「${cur.name}」？里面的任务会挪到收件箱。`, ok: '删除', danger: true })) return;
         Store.update(dd => {
           dd.lists = dd.lists.filter(l => l.id !== cur.id);
           for (const t of dd.tasks) if (t.listId === cur.id) t.listId = 'inbox';
@@ -232,8 +232,8 @@ const Tasks = {
       h('div.t-actions', null,
         t.done ? null : h('button.btn', { onclick: () => { Pomo.setTask(t.id); App.showTab('pomo'); } }, '开始专注'),
         t.done ? null : h('button.btn', { onclick: () => this.setMust(t.id, !t.top) }, t.top ? '移出今天必做' : '设为今天必做'),
-        h('button.btn.ghost', { onclick: () => {
-          if (!confirm(`删除「${t.title}」？`)) return;
+        h('button.btn.ghost', { onclick: async () => {
+          if (!await ask({ title: '删除任务', text: `删除「${t.title}」？`, ok: '删除', danger: true })) return;
           Store.update(d => { d.tasks = d.tasks.filter(x => x.id !== t.id); });
           this.openId = null;
         } }, '删除'),

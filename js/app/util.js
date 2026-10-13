@@ -1,6 +1,6 @@
 "use strict";
 /* ============================================================
-   app/util.js：DOM 小工具 / 日期 / id
+   app/util.js：DOM 小工具 / 日期 / id / 小纸条提示 / 卷轴对话框
    ============================================================ */
 
 const $  = (sel, root = document) => root.querySelector(sel);
@@ -68,6 +68,78 @@ function toast(msg){
   document.body.append(el);
   requestAnimationFrame(() => el.classList.add('show'));
   setTimeout(() => { el.classList.remove('show'); setTimeout(() => el.remove(), 400); }, 2600);
+}
+
+/* 字符画 → 像素小图标（SVG，k 是一格；颜色跟着 fill） */
+const pixSvg = rows => `<svg viewBox="0 0 ${rows[0].length} ${rows.length}" shape-rendering="crispEdges">` +
+  rows.flatMap((r, y) => [...r].map((c, x) => c === 'k' ? `<rect x="${x}" y="${y}" width="1" height="1"/>` : '')).join('') + '</svg>';
+
+/* ---------- 像素卷轴对话框：代替浏览器自带的 prompt / confirm ----------
+   ask({ title, text, input, value, placeholder, ok, danger }) → Promise
+   input = true：要填字，返回填好的字（去掉首尾空格；取消 = null）；否则返回 true / false
+   打开时卷轴从上往下展开，兔耳小鸟飞过来停在上面扑腾；Esc / 点外面 = 取消 */
+const SEAL_SVG = pixSvg(['kkkkkkk', '...k...', 'kkkkkkk', 'k..k..k', 'k.k.k.k', 'k..k..k', 'k.k.k.k']);   // 红色小印章：「雨」
+let birdStrip = null;
+function dlgBird(){
+  if (typeof BUNNY === 'undefined') return null;
+  if (!birdStrip){   // 场景里那只兔耳小鸟（sprites.js），两帧拼成一条，css 一格一格地换
+    const a = BUNNY[0].l, c = document.createElement('canvas');
+    c.width = a.width * 2; c.height = a.height;
+    const g = c.getContext('2d');
+    g.drawImage(BUNNY[0].l, 0, 0); g.drawImage(BUNNY[1].l, a.width, 0);
+    birdStrip = { url: c.toDataURL(), w: a.width * 2, h: a.height * 2 };   // 一个像素 = 2 css 像素
+  }
+  return h('span.dlg-bird', { 'aria-hidden': 'true', style: { '--bw': birdStrip.w + 'px', '--bh': birdStrip.h + 'px', backgroundImage: `url(${birdStrip.url})` } });
+}
+function ask({ title, text = '', input = false, value = '', placeholder = '', max = 60, ok = '确定', danger = false }){
+  return new Promise(done => {
+    const prev = document.activeElement;
+    const field = input ? h('input.dlg-input', { value, placeholder, maxLength: max }) : null;
+    const no = h('button.btn.ghost', null, '取消');
+    const yes = h('button.btn.primary' + (danger ? '.danger' : ''), null, ok);
+    const seal = h('span.dlg-seal', { 'aria-hidden': 'true' });
+    seal.innerHTML = SEAL_SVG;
+    const paper = h('div.dlg-paper', null, h('div.dlg-inner', null,
+      h('h3.dlg-title', { id: 'dlg-title' }, title),
+      text ? h('p.dlg-text', null, text) : null,
+      field,
+      h('div.dlg-btns', null, seal, no, yes)));
+    const box = h('div.dlg', { role: 'dialog', 'aria-modal': 'true', 'aria-labelledby': 'dlg-title' },
+      dlgBird(), h('div.dlg-rod'), paper, h('div.dlg-rod'));
+    const back = h('div.dlg-back', null, box);
+    let closed = false;
+    const close = result => {
+      if (closed) return;
+      closed = true;
+      done(result);
+      paper.style.setProperty('--h', paper.offsetHeight + 'px');   // 卷回去：从现在的高度收到 0
+      box.classList.remove('opening'); box.classList.add('closing'); back.classList.add('closing');
+      setTimeout(() => back.remove(), 260);
+      if (prev && prev.isConnected) prev.focus({ preventScroll: true });
+    };
+    const accept = () => close(input ? field.value.trim() : true);
+    const cancel = () => close(input ? null : false);
+    yes.onclick = accept; no.onclick = cancel;
+    back.addEventListener('pointerdown', e => { if (e.target === back) cancel(); });
+    back.addEventListener('keydown', e => {
+      e.stopPropagation();   // 对话框开着时，按键不去操控 rabbit
+      if (e.isComposing) return;
+      if (e.key === 'Escape'){ e.preventDefault(); cancel(); }
+      else if (e.key === 'Enter' && e.target === field){ e.preventDefault(); accept(); }
+      else if (e.key === 'Tab'){   // Tab 只在对话框里转
+        const fs = [field, no, yes].filter(Boolean), i = fs.indexOf(document.activeElement);
+        e.preventDefault();
+        fs[(i + (e.shiftKey ? fs.length - 1 : 1) + fs.length) % fs.length].focus();
+      }
+    });
+    back.addEventListener('keyup', e => e.stopPropagation());
+    document.body.append(back);
+    paper.style.setProperty('--h', paper.scrollHeight + 'px');   // 展开到内容的高度
+    box.classList.add('opening');
+    paper.addEventListener('animationend', () => box.classList.remove('opening'), { once: true });
+    (field || (danger ? no : yes)).focus({ preventScroll: true });   // 删除之类的：默认停在「取消」上
+    if (field) field.select();
+  });
 }
 
 /* 防抖；flush() 立刻执行还没执行的那一次（没有待执行的就什么都不做） */

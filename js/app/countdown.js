@@ -96,8 +96,8 @@ const Countdown = {
       h('div.h-colors', null, ...HABIT_COLORS.map((c, i) => h('button.h-color' + (i === cd.color ? '.on' : ''),
         { title: c.name, style: { background: rgb(c.fill) }, onclick: () => set('color', i) }))),
       h('div.t-actions', null,
-        h('button.btn.ghost', { onclick: () => {
-          if (!confirm(`删除倒数日「${cd.name}」？`)) return;
+        h('button.btn.ghost', { onclick: async () => {
+          if (!await ask({ title: '删除倒数日', text: `删除倒数日「${cd.name}」？`, ok: '删除', danger: true })) return;
           Store.update(d => { d.countdowns = d.countdowns.filter(x => x.id !== cd.id); });
           this.openId = null;
         } }, '删除')));

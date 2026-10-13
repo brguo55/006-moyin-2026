@@ -81,6 +81,8 @@ body.panel-closed:not(.immersive) #opener{ display: flex; }
 .btn.ghost{ background: transparent; box-shadow: 0 -2px 0 0 var(--ink-3), 0 2px 0 0 var(--ink-3), -2px 0 0 0 var(--ink-3), 2px 0 0 0 var(--ink-3); color: var(--ink-2); }
 .btn.ghost:hover{ color: var(--ink); box-shadow: var(--pxb); }
 .btn.small{ padding: 1px 8px; font-size: 12px; }
+.btn.danger{ background: color-mix(in srgb, var(--warn) 16%, #fbf7ef); color: var(--warn); }
+.btn.danger:hover{ background: color-mix(in srgb, var(--warn) 30%, #fbf7ef); }
 .btn:disabled{ opacity: .4; cursor: default; }
 .btn-row, .t-actions{ display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
 .link{ border: 0; background: none; color: var(--ink-2); cursor: pointer; text-decoration: underline dotted; padding: 0; font-size: 12px; }
@@ -289,6 +291,41 @@ body.immersive #immersive{ display: block; }
   box-shadow: var(--pxb), var(--bevel), 4px 4px 0 2px rgba(62,48,38,.16);
   opacity: 0; transform: translateY(8px); transition: opacity .3s steps(3), transform .3s steps(3); pointer-events: none; }
 .toast.show{ opacity: 1; transform: none; }
+/* 卷轴对话框（util.js ask）：上下两根木轴、金色轴头，中间是裱在主题色绫子上的纸；
+   打开时一格一格往下展开，关上时卷回去；兔耳小鸟停在上面扑腾 */
+.dlg-back{ position: fixed; inset: 0; z-index: 50; display: grid; justify-items: center; align-items: start;   /* 顶上那根轴不动，纸往下展开 */
+  padding: max(64px, 20vh) 24px 24px; overflow-y: auto; background: rgba(40,28,24,.3); animation: dlg-fade .2s steps(3) both; }
+.dlg-back.closing{ animation: dlg-fade-out .24s steps(3) both; pointer-events: none; }
+.dlg{ position: relative; width: min(340px, 100%); filter: drop-shadow(6px 6px 0 rgba(40,28,24,.22)); }
+.dlg-rod{ position: relative; z-index: 1; height: 10px; margin: 0 -4px; background: #7a4a2e;
+  box-shadow: inset 0 2px 0 #a8693f, inset 0 -2px 0 #55311d, 0 0 0 2px var(--ink); }
+.dlg-rod::before, .dlg-rod::after{ content: ""; position: absolute; top: -4px; width: 8px; height: 18px; background: #d9a441;
+  box-shadow: inset 2px 2px 0 #f2d488, inset -2px -2px 0 #a8792a, 0 0 0 2px var(--ink); }
+.dlg-rod::before{ left: -10px; }
+.dlg-rod::after{ right: -10px; }
+.dlg-paper{ overflow: hidden; background: color-mix(in srgb, var(--wash) 60%, #f8f3e9);
+  box-shadow: inset 2px 0 0 rgba(62,48,38,.22), inset -2px 0 0 rgba(62,48,38,.22); }
+.dlg-inner{ margin: 12px 14px; padding: 14px 16px 12px; background: #fbf7ef; box-shadow: 0 0 0 2px rgba(62,48,38,.14); }
+.dlg-title{ margin: 0 0 8px; font-family: var(--hand); font-weight: normal; font-size: 18px; letter-spacing: 2px; }
+.dlg-text{ margin: 4px 0 2px; font-size: 12px; line-height: 1.7; white-space: pre-line; }
+.dlg-input{ display: block; width: 100%; box-sizing: border-box; margin: 6px 0 2px; font-size: 12px; }
+.dlg-btns{ display: flex; align-items: center; gap: 8px; margin-top: 16px; }
+.dlg-seal{ margin-right: auto; width: 18px; height: 18px; padding: 2px; box-sizing: border-box; background: #b8432f; box-shadow: 0 0 0 2px #8e2f20; }
+.dlg-seal svg{ display: block; width: 100%; height: 100%; fill: #fbeee4; }
+.dlg-bird{ position: absolute; z-index: 2; right: 22px; top: calc(-2px - var(--bh)); width: var(--bw); height: var(--bh);
+  background-repeat: no-repeat; background-size: calc(var(--bw) * 2) var(--bh); image-rendering: pixelated;
+  animation: dlg-land .48s steps(6) .18s both, dlg-flap .22s steps(2) infinite; }
+.dlg.opening .dlg-paper{ animation: dlg-unroll .36s steps(8) both; }
+.dlg.closing .dlg-paper{ animation: dlg-rollup .22s steps(5) both; }
+.dlg.closing .dlg-bird{ animation: dlg-fly .22s steps(4) both, dlg-flap .22s steps(2) infinite; }
+@keyframes dlg-unroll{ from{ height: 0; } to{ height: var(--h); } }
+@keyframes dlg-rollup{ from{ height: var(--h); } to{ height: 0; } }
+@keyframes dlg-fade{ from{ opacity: 0; } }
+@keyframes dlg-fade-out{ to{ opacity: 0; } }
+@keyframes dlg-flap{ to{ background-position: calc(var(--bw) * -2) 0; } }
+@keyframes dlg-land{ from{ transform: translate(36px, -30px); opacity: 0; } 70%{ transform: translate(0, 2px); opacity: 1; } to{ transform: none; } }
+@keyframes dlg-fly{ to{ transform: translate(36px, -30px); opacity: 0; } }
+@media (prefers-reduced-motion: reduce){ .dlg-back, .dlg-paper, .dlg-bird{ animation: none !important; } }
 .fatal{ position: fixed; left: 50%; top: 40%; transform: translateX(-50%); z-index: 40; padding: 18px 24px; background: var(--paper); border: 2px solid var(--warn); color: var(--warn); border-radius: 0; }
 
 /* ---------- 面板放大：铺满窗口，内容排在中间一栏，宽的地方分栏 ---------- */

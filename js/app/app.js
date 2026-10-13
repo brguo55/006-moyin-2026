@@ -20,9 +20,6 @@ const PANEL_W = 380, PANEL_GAP = 16, NARROW = 760;
 const ui = (() => { try { return JSON.parse(localStorage.getItem('tingyu-ui')) || {}; } catch (e){ return {}; } })();
 const saveUi = () => { try { localStorage.setItem('tingyu-ui', JSON.stringify(ui)); } catch (e){} };
 
-/* 字符画 → 像素小图标（SVG，k 是一格） */
-const pixSvg = rows => `<svg viewBox="0 0 ${rows[0].length} ${rows.length}" shape-rendering="crispEdges">` +
-  rows.flatMap((r, y) => [...r].map((c, x) => c === 'k' ? `<rect x="${x}" y="${y}" width="1" height="1"/>` : '')).join('') + '</svg>';
 /* 放大 / 恢复：四个角朝外 / 朝里（和场景左上角的放大按钮一样） */
 const MAX_ICON = {
   on:  pixSvg(['kkk..kkk', 'k......k', 'k......k', '........', '........', 'k......k', 'k......k', 'kkk..kkk']),

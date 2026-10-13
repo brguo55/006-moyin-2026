@@ -100,12 +100,12 @@ const Habits = {
         { title: c.name, style: { background: rgb(c.fill) },
           onclick: () => Store.update(d => { d.habits.find(x => x.id === hb.id).color = i; }) }))),
       h('div.t-actions', null,
-        h('button.btn.ghost', { onclick: () => {
-          const name = (prompt('习惯改名为', hb.name) || '').trim();
-          if (name) Store.update(d => { d.habits.find(x => x.id === hb.id).name = name; });
+        h('button.btn.ghost', { onclick: async () => {
+          const name = await ask({ title: '习惯改名', input: true, value: hb.name, ok: '改名' });
+          if (name) Store.update(d => { const x = d.habits.find(y => y.id === hb.id); if (x) x.name = name; });
         } }, '改名'),
-        h('button.btn.ghost', { onclick: () => {
-          if (!confirm(`删除习惯「${hb.name}」和它的全部打卡记录？`)) return;
+        h('button.btn.ghost', { onclick: async () => {
+          if (!await ask({ title: '删除习惯', text: `删除习惯「${hb.name}」和它的全部打卡记录？`, ok: '删除', danger: true })) return;
           Store.update(d => { d.habits = d.habits.filter(x => x.id !== hb.id); delete d.checks[hb.id]; });
         } }, '删除')),
     );

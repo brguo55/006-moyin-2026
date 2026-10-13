@@ -38,7 +38,9 @@ const Settings = {
         B.perm === 'granted' ? h('button.btn', { onclick: async () => { await B.writeFolder(true); toast('已备份'); } }, '立即备份') : null,
         B.perm === 'granted' ? h('button.btn.ghost', { onclick: () => B.restoreFromFolder() }, '从文件夹恢复') : null,
         h('button.btn.ghost', { onclick: () => B.chooseFolder() }, '换一个文件夹'),
-        h('button.btn.ghost', { onclick: () => { if (confirm('停止自动备份？文件夹里已有的备份不会删除。')) B.stopFolder(); } }, '停用')));
+        h('button.btn.ghost', { onclick: async () => {
+          if (await ask({ title: '停用自动备份', text: '停止自动备份？文件夹里已有的备份不会删除。', ok: '停用', danger: true })) B.stopFolder();
+        } }, '停用')));
     }
     kids.push(h('section.set', null,
       h('h3', null, '备份'),
