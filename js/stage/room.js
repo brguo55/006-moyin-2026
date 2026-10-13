@@ -102,8 +102,8 @@ const Room = {
   },
   keyUp(code){ this.keys.delete(code); if (code === 'Space') this.jumpHeld = false; },
   clearKeys(){ this.keys.clear(); this.jumpHeld = false; },
-  /* 在打瞌睡，或者刚被点醒、还在醒神（wake 播完才能动） */
-  dozing(){ return this.napT >= 0 || !!(this.act && this.act.kind === 'wake'); },
+  /* 在打瞌睡，或者刚被点醒、还在醒神（点醒的那一下 click 播完才能动） */
+  dozing(){ return this.napT >= 0 || !!(this.act && this.act.wake); },
   /* 睡着时按了键：提示一下要点他（每次睡着只提示一次） */
   _napHint(){
     if (this.napT < 0 || this.napHinted) return;
@@ -134,8 +134,11 @@ const Room = {
     const who = this.hit(px, py);
     if (who === 'panel') this._openSettings();
     else if (who === 'rabbit'){
-      if (this.napT >= 0){ this._touched(); this._play('wake'); }   // 睡着时被点：醒过来
-      else this.doCheer();                                           // 平时被点：冒红色爱心
+      // 被点一下：做个动作（click）+ 冒红色爱心；睡着时被点就是醒过来，这一下播完才能动
+      const napping = this.napT >= 0;
+      this._touched();
+      if (this.grounded){ this._play('click'); this.act.wake = napping; }
+      this.doCheer();
     }
     else if (who === 'bunny'){ this.bunny.jump = 0; this._burst(this.bunny.x, this.bunny.y - 14, 2); chirp(); }
     return !!who;
@@ -215,7 +218,7 @@ const Room = {
     }
     // 打瞌睡：几分钟没操控（设置里的 napMin）或者长休息刚开始 → 睡着。站在地上、家具、阁楼、床上都行，只要不在空中
     // 用真实时间算：窗口被挡住时浏览器会暂停画面，按帧算的话等多久都不会睡
-    // 睡着以后按键都不管用（keyDown），点他一下才醒（click → wake）
+    // 睡着以后按键都不管用（keyDown），点他一下才醒（播 click）
     if (this.napT >= 0) this.napT += dt;
     else if (this.grounded && !this.act && !focusOn && Math.abs(this.vx) < 1
       && (Date.now() - this.lastInput > this._napAfter() || this.breakNap)){
@@ -356,7 +359,7 @@ const Room = {
   },
   /* 现在画哪一帧：{ anim, i（第几帧）, dy（往下挪几像素，抵消画里自带的升高）}
      空中：起跳 / 二段跳先播一遍，之后停在「往上」或「往下掉」那一帧；
-     地上：先看有没有正在播的一次性动作（落地、被点醒、拍手、伸懒腰），再看打瞌睡、番茄钟专注，最后是待机 */
+     地上：先看有没有正在播的一次性动作（落地、被点、拍手、伸懒腰），再看打瞌睡、番茄钟专注，最后是待机 */
   _frame(){
     const R = RABBIT, A = R.anims, dir = this.facing < 0 ? 'left' : 'right', act = this.act;
     const seq = (a, frames) => {   // 一次性动作（只播 frames 这几帧）播到第几帧；播完返回 -1
