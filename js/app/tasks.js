@@ -7,6 +7,8 @@
    今天至少完成：每天挑几件一定要做完的事（默认 3 件，可以 2–4 件，settings.mustN）。
    它们就是普通任务，钉在最上面（task.top = 钉上的时间）：没做完的第二天还在，做完的只在完成那天显示。
    钉在上面的任务不再出现在下面的清单里（搜索时除外）
+   标签：任务详情里加（task.tags），显示在任务标题下面，搜索能搜到（写不写 # 都行）
+   自己建的清单可以拖动排顺序；今天 / 全部 / 收件箱固定在最前面
    ============================================================ */
 
 /* 解析标题首尾的口语日期 → { title, due } */
@@ -60,6 +62,7 @@ const Tasks = {
     e.hint = h('div.add-hint');
     e.search = h('input.search', { type: 'search', placeholder: '搜索任务', oninput: ev => { this.query = ev.target.value.trim(); this.renderList(); } });
     e.list = h('div.task-list');
+    e.tagOptions = h('datalist#tag-options');   // 标签输入框的提示：用过的标签
     // 面板放大时：清单在左边一栏、任务在右边（css：body.panel-max .task-cols）
     root.append(
       e.must,
@@ -69,6 +72,7 @@ const Tasks = {
           h('div.add-row', null, e.input, e.date), e.hint,
           e.list,
           h('div.search-row', null, e.search))),
+      e.tagOptions,
     );
   },
   refresh(){ this.renderMust(); this.renderChips(); this.renderList(); },
@@ -139,7 +143,10 @@ const Tasks = {
     this.el.chips.replaceChildren(
       chip('today', '今天', undone.filter(t => t.due && t.due <= today).length),
       chip('all', '全部', undone.length),
-      ...d.lists.map(l => chip(l.id, l.name, undone.filter(t => t.listId === l.id).length)),
+      ...d.lists.map(l => {
+        const c = chip(l.id, l.name, undone.filter(t => t.listId === l.id).length);
+        return l.id === 'inbox' ? c : this._draggable(c, l.id);
+      }),
       h('button.chip.add', { title: '新建清单', onclick: async () => {
         const name = await ask({ title: '新清单', input: true, placeholder: '清单的名字，比如「工作」', ok: '新建' });
         if (!name) return;
@@ -166,12 +173,48 @@ const Tasks = {
     ] : []));
   },
 
+  /* 自己建的清单拖动排顺序：放在另一个清单的前面或后面（横着排看左右，面板放大时竖着排看上下） */
+  _draggable(el, id){
+    const MIME = 'text/x-tingyu-list';
+    const side = e => {
+      const r = el.getBoundingClientRect(), col = getComputedStyle(this.el.chips).flexDirection === 'column';
+      return (col ? e.clientY < r.top + r.height / 2 : e.clientX < r.left + r.width / 2) ? 'before' : 'after';
+    };
+    const clear = () => el.classList.remove('drop-before', 'drop-after');
+    el.draggable = true;
+    el.title = '拖动可以调整顺序';
+    el.addEventListener('dragstart', e => { e.dataTransfer.setData(MIME, id); e.dataTransfer.effectAllowed = 'move'; el.classList.add('dragging'); });
+    el.addEventListener('dragend', () => el.classList.remove('dragging'));
+    el.addEventListener('dragover', e => {
+      if (!e.dataTransfer.types.includes(MIME)) return;   // 只接清单（今天 / 全部 / 收件箱不接）
+      e.preventDefault(); e.dataTransfer.dropEffect = 'move';
+      const s = side(e);
+      el.classList.toggle('drop-before', s === 'before'); el.classList.toggle('drop-after', s === 'after');
+    });
+    el.addEventListener('dragleave', e => { if (!el.contains(e.relatedTarget)) clear(); });
+    el.addEventListener('drop', e => {
+      e.preventDefault(); clear();
+      const from = e.dataTransfer.getData(MIME);
+      if (from && from !== id) this.moveList(from, id, side(e));
+    });
+    return el;
+  },
+  moveList(from, to, where){
+    Store.update(d => {
+      const i = d.lists.findIndex(l => l.id === from);
+      if (i < 0) return;
+      const [l] = d.lists.splice(i, 1);
+      const j = d.lists.findIndex(x => x.id === to);
+      if (j < 0) d.lists.push(l); else d.lists.splice(j + (where === 'after' ? 1 : 0), 0, l);
+    });
+  },
+
   /* ---------- 任务列表 ---------- */
   _visible(){
     const d = Store.data, today = dayKey(), q = this.query.toLowerCase();
     const must = new Set(q ? [] : this._must().map(t => t.id));   // 已经在最上面「今天至少完成」里的不再列（搜索时都列）
     let ts = d.tasks.filter(t => !must.has(t.id));
-    if (q) ts = ts.filter(t => (t.title + ' ' + t.notes).toLowerCase().includes(q));
+    if (q) ts = ts.filter(t => [t.title, t.notes, ...(t.tags || []).map(g => '#' + g)].join(' ').toLowerCase().includes(q));
     else if (this.view === 'today') ts = ts.filter(t => t.done ? dayKey(new Date(t.doneAt)) === today : (t.due && t.due <= today));
     else if (this.view !== 'all') ts = ts.filter(t => t.listId === this.view);
     const undone = ts.filter(t => !t.done).sort((a, b) =>
@@ -207,6 +250,7 @@ const Tasks = {
         h('div.t-meta', null,
           t.due ? h('span' + (!t.done && t.due < today ? '.overdue' : ''), null, dueLabel(t.due)) : null,
           (slot || this.view === 'today' || this.view === 'all' || this.query) && list && list.id !== 'inbox' ? h('span', null, list.name) : null,
+          ...(t.tags || []).map(g => h('span.tag', null, '#' + g)),
           t.notes ? h('span', null, '有备注') : null,
           pomos ? h('span.pomo-n', null, `番茄 ×${pomos}`) : null,
           QUADS[t.quad] ? h('span.qtag', { style: quadVars(t.quad), title: QUADS[t.quad].name }, QUADS[t.quad].act) : null,
@@ -225,6 +269,7 @@ const Tasks = {
         h('label', null, '截止 ', h('input', { type: 'date', value: t.due || '', onchange: e => set('due', e.target.value || null) })),
         h('label', null, '清单 ', h('select', { onchange: e => set('listId', e.target.value) },
           ...Store.data.lists.map(l => h('option', { value: l.id, selected: l.id === t.listId }, l.name)))),
+        h('div.tag-field', null, '标签 ', this._tagEdit(t)),   // 不用 label：点「标签」两个字会误点到 × 按钮
         h('label', null, '轻重 ', h('select', { onchange: e => set('quad', +e.target.value || null) },
           h('option', { value: '' }, '未分类'),
           ...Object.entries(QUADS).map(([q, x]) => h('option', { value: q, selected: +q === t.quad }, `${x.act}（${x.name}）`)))),
@@ -244,6 +289,34 @@ const Tasks = {
   rollover(){
     const today = dayKey(), late = t => !t.done && t.due && t.due < today;
     if (Store.data.tasks.some(late)) Store.update(d => { for (const t of d.tasks) if (late(t)) t.due = today; });
+  },
+  /* 标签编辑：已有的标签（× 去掉）+ 小输入框（回车或逗号加上；空着按退格删最后一个；会提示用过的标签）。安静保存，收起时再刷新 */
+  _tagEdit(t){
+    const tags = [...(t.tags || [])];
+    const save = () => Store.update(d => { const x = d.tasks.find(y => y.id === t.id); if (x) x.tags = tags.slice(); }, true);
+    const box = h('span.tag-edit');
+    const input = h('input.tag-add', { placeholder: '＋ 标签', maxLength: 20, list: 'tag-options',
+      onkeydown: e => {
+        if (e.isComposing) return;
+        if (e.key === 'Enter' || e.key === ',' || e.key === '，'){ e.preventDefault(); add(true); }
+        else if (e.key === 'Backspace' && !input.value && tags.length){ tags.pop(); save(); draw(true); }
+      },
+      onchange: () => add(false) });   // 从提示里选了、或者写完点别处，也算加上
+    const add = refocus => {
+      const v = input.value.replace(/^[#＃\s]+/, '').trim();
+      input.value = '';
+      if (v && !tags.includes(v)){ tags.push(v); save(); }
+      draw(refocus);
+    };
+    const draw = refocus => {
+      box.replaceChildren(...tags.map(g => h('span.tag-chip', null, '#' + g,
+        h('button', { title: '去掉这个标签', onclick: () => { tags.splice(tags.indexOf(g), 1); save(); draw(false); } }, '×'))), input);
+      const all = [...new Set(Store.data.tasks.flatMap(x => x.tags || []))].filter(g => !tags.includes(g)).sort((a, b) => a.localeCompare(b, 'zh'));
+      this.el.tagOptions.replaceChildren(...all.map(g => h('option', { value: g })));
+      if (refocus) input.focus();
+    };
+    draw(false);
+    return box;
   },
   toggleDone(id){
     let nowDone = false;

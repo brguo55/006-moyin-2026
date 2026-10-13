@@ -3,7 +3,7 @@
    （改了文件不用手动改版本号；下次打开就是新版。只有增删文件时才需要改 SHELL）
    用户数据在 IndexedDB 里，与这里的缓存无关，清缓存不会丢数据。
    ============================================================ */
-const CACHE = 'tingyu-rabbit-v12';
+const CACHE = 'tingyu-rabbit-v13';
 const SHELL = [
   './', 'index.html', 'manifest.webmanifest',
   'css/stage.css', 'css/app.css',
@@ -11,7 +11,7 @@ const SHELL = [
   'js/stage/engine.js', 'js/stage/palette.js', 'js/stage/pixel.js', 'js/stage/sprites.js',
   'js/stage/room.js', 'js/stage/house.js', 'js/stage/ui.js', 'js/stage/audio.js', 'js/stage/main.js',
   'js/app/util.js', 'js/app/store.js', 'js/app/backup.js', 'js/app/tasks.js', 'js/app/matrix.js',
-  'js/app/pomodoro.js', 'js/app/habits.js', 'js/app/countdown.js', 'js/app/settings.js', 'js/app/app.js',
+  'js/app/pomodoro.js', 'js/app/habits.js', 'js/app/countdown.js', 'js/app/diary.js', 'js/app/settings.js', 'js/app/app.js',
   ...['00_idle_rabbit_right', '01_idle_rabbit_left', '02_jump_rabbit_right', '03_jump_rabbit_left',
        '04_jump_sec_rabbit_right', '05_jump_sec_rabbit_left', '20_nap_rabbit', '21_wake_rabbit',
        '40_focus_rabbit_one', '41_focus_rabbit_two', '60_done_rabbit', '61_stretch_rabbit'].map(f => `assets/rabbit/${f}.png`),

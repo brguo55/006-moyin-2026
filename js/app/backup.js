@@ -151,7 +151,7 @@ const Backup = {
     if (!obj || obj.app !== 'tingyu' || !obj.data || !Array.isArray(obj.data.tasks)) throw new Error('这不是听雨的备份文件');
     const d = obj.data, when = obj.exportedAt ? new Date(obj.exportedAt).toLocaleString() : '未知时间';
     const ok = await ask({ title: '恢复备份', ok: '恢复', danger: true,
-      text: `用${from}恢复？\n\n备份时间：${when}\n任务 ${d.tasks.length} 个 · 习惯 ${(d.habits || []).length} 个 · 番茄 ${(d.pomos || []).length} 个 · 倒数日 ${(d.countdowns || []).length} 个\n\n现在的数据会被替换。替换前会先把现在的数据另存一份。` });
+      text: `用${from}恢复？\n\n备份时间：${when}\n任务 ${d.tasks.length} 个 · 习惯 ${(d.habits || []).length} 个 · 番茄 ${(d.pomos || []).length} 个 · 倒数日 ${(d.countdowns || []).length} 个 · 日记 ${Object.keys(d.diary || {}).length} 篇\n\n现在的数据会被替换。替换前会先把现在的数据另存一份。` });
     if (!ok) return;
     // 先留一份现状，万一导错了还能找回
     const safety = this.serialize();

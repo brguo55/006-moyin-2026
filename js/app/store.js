@@ -2,7 +2,7 @@
 /* ============================================================
    app/store.js：数据 —— 全部存在本机浏览器的 IndexedDB 里
    ------------------------------------------------------------
-   'data'    一切用户数据（任务 / 清单 / 习惯 / 打卡 / 番茄记录 / 设置）—— 备份的就是它
+   'data'    一切用户数据（任务 / 清单 / 习惯 / 打卡 / 番茄记录 / 倒数日 / 日记 / 设置）—— 备份的就是它
    'timer'   番茄钟进行中的状态（每次开始 / 暂停都变，不进备份）
    'backup'  备份状态（上次备份时间、方式、文件夹名）
    'dir'     自动备份文件夹的句柄（File System Access API）
@@ -56,11 +56,12 @@ function freshData(){
   return {
     version: DATA_VERSION,
     lists: [{ id: 'inbox', name: '收件箱', createdAt: now }],
-    tasks: [],           // { id, listId, title, notes, due, done, doneAt, createdAt, quad（轻重 1–4）, top（钉进「今天至少完成」的时间） }
+    tasks: [],           // { id, listId, title, notes, due, done, doneAt, createdAt, tags（标签名的数组）, quad（轻重 1–4）, top（钉进「今天至少完成」的时间） }
     habits: [],
     checks: {},          // { 习惯id: { 'YYYY-MM-DD': 1 } }
     pomos: [],           // { id, start, end, minutes, taskId }
     countdowns: [],      // { id, name, date: 'YYYY-MM-DD', yearly, color, createdAt }
+    diary: {},           // { 'YYYY-MM-DD': { text, mood: 'sun' | 'cloud' | 'rain' | null, updatedAt } }
     settings: { weather: 0, theme: 2, ambient: true, muted: false, focusSec: 1500, shortSec: 300, longSec: 900, longEvery: 4,   // 番茄钟时长按秒存（25:05 这种也行）
                 cycles: 4, timerSec: 600,   // 番茄钟一轮几个循环（0 = 不限）；计时器时长（秒）
                 mustN: 3,                   // 任务页最上面「今天至少完成」几件（2–4）
@@ -83,6 +84,7 @@ function migrate(d){
   out.meta = Object.assign({}, base.meta, d.meta);
   for (const k of ['lists', 'tasks', 'habits', 'pomos', 'countdowns']) if (!Array.isArray(out[k])) out[k] = [];
   if (!out.checks || typeof out.checks !== 'object') out.checks = {};
+  if (!out.diary || typeof out.diary !== 'object' || Array.isArray(out.diary)) out.diary = {};
   if (!out.lists.some(l => l.id === 'inbox')) out.lists.unshift(base.lists[0]);
   out.version = DATA_VERSION;
   return out;

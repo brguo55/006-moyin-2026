@@ -104,7 +104,7 @@ const Settings = {
     /* ---------- 关于 ---------- */
     kids.push(h('section.set', null,
       h('h3', null, '关于'),
-      h('p.muted', null, `任务 ${d.tasks.length} 个 · 习惯 ${d.habits.length} 个 · 番茄 ${d.pomos.length} 个 · 倒数日 ${d.countdowns.length} 个`),
+      h('p.muted', null, `任务 ${d.tasks.length} 个 · 习惯 ${d.habits.length} 个 · 番茄 ${d.pomos.length} 个 · 倒数日 ${d.countdowns.length} 个 · 日记 ${Object.keys(d.diary).length} 篇`),
       h('p.muted', null, '快捷键：A / D 走，空格跳（空中再按 = 二段跳），S 下来，E 互动（在门口的控制面板旁按 E 打开设置），M 静音。')));
 
     this.el.root.replaceChildren(...kids);
