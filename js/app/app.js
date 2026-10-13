@@ -1,7 +1,7 @@
 "use strict";
 /* ============================================================
    app/app.js：外壳 —— 右侧手绘面板（任务 / 番茄 / 习惯 / 设置）、
-   备份提醒横幅、沉浸模式、跟着水色变的面板配色、启动流程
+   备份提醒横幅、沉浸模式、放大（面板或场景铺满窗口）、跟着水色变的面板配色、启动流程
    ============================================================ */
 
 const TABS = [
@@ -16,13 +16,23 @@ const TABS = [
 const tabShown = id => id === 'set' || !(Store.data && Store.data.settings.hidden.includes(id));
 const PANEL_W = 380, PANEL_GAP = 16, NARROW = 760;
 
-/* 只是本机界面习惯（开没开面板、上次在哪个页签），不算数据，放 localStorage */
+/* 只是本机界面习惯（开没开面板、面板放没放大、上次在哪个页签），不算数据，放 localStorage */
 const ui = (() => { try { return JSON.parse(localStorage.getItem('tingyu-ui')) || {}; } catch (e){ return {}; } })();
 const saveUi = () => { try { localStorage.setItem('tingyu-ui', JSON.stringify(ui)); } catch (e){} };
+
+/* 字符画 → 像素小图标（SVG，k 是一格） */
+const pixSvg = rows => `<svg viewBox="0 0 ${rows[0].length} ${rows.length}" shape-rendering="crispEdges">` +
+  rows.flatMap((r, y) => [...r].map((c, x) => c === 'k' ? `<rect x="${x}" y="${y}" width="1" height="1"/>` : '')).join('') + '</svg>';
+/* 放大 / 恢复：四个角朝外 / 朝里（和场景左上角的放大按钮一样） */
+const MAX_ICON = {
+  on:  pixSvg(['kkk..kkk', 'k......k', 'k......k', '........', '........', 'k......k', 'k......k', 'kkk..kkk']),
+  off: pixSvg(['..k..k..', '..k..k..', 'kkk..kkk', '........', '........', 'kkk..kkk', '..k..k..', '..k..k..']),
+};
 
 const App = {
   tab: ui.tab || 'tasks',
   open: ui.open !== false,
+  max: !!ui.max,       // 面板放大：铺满整个窗口
   el: {},
 
   build(){
@@ -37,10 +47,12 @@ const App = {
       e.sections[t.id] = sec;
       e.body.append(sec);
     }
+    e.maxBtn = h('button.icon-btn.max-btn', { onclick: () => this.setMax(!this.max) });
     e.panel = h('aside#panel', null,
       h('header.panel-head', null,
         h('div.brand', null, h('span.brand-name', null, '听雨'), h('span.brand-date', null, this._dateLine())),
-        h('button.icon-btn', { title: '收起面板', onclick: () => this.setOpen(false) }, '›')),
+        h('div.head-btns', null, e.maxBtn,
+          h('button.icon-btn', { title: '收起面板（场景放大）', onclick: () => this.setOpen(false) }, '›'))),
       e.tabs, e.banner, e.body);
     e.opener = h('button#opener', { title: '打开面板', onclick: () => this.setOpen(true) }, h('span.op-name', null, '听雨'), h('span.op-timer'));
     document.body.append(e.panel, e.opener);
@@ -78,16 +90,31 @@ const App = {
     this.el.banner.hidden = !kids.length;
   },
 
-  /* ---------- 面板开合 + 场景让位 ---------- */
+  /* ---------- 面板开合 / 放大 + 场景让位 ----------
+     三种样子：面板 + 场景（平时）；收起面板 = 场景放大铺满窗口；面板放大 = 面板铺满窗口、场景藏在后面 */
   setOpen(open){
-    this.open = open; ui.open = open; saveUi();
+    this.open = open; ui.open = open;
+    if (!open) this.max = ui.max = false;   // 收起面板就是要看场景；再打开时是平常大小
+    saveUi();
     document.body.classList.toggle('panel-closed', !open);
     this.layout();
   },
+  setMax(max){
+    this.max = max; ui.max = max; saveUi();
+    this.layout();
+  },
   layout(){
-    const narrow = innerWidth < NARROW, immersive = document.body.classList.contains('immersive');
-    document.body.classList.toggle('narrow', narrow);
+    const body = document.body, narrow = innerWidth < NARROW, immersive = body.classList.contains('immersive');
+    const max = this.open && this.max && !narrow;
+    body.classList.toggle('narrow', narrow);
+    body.classList.toggle('panel-max', max);
+    this.el.maxBtn.title = max ? '恢复面板大小' : '放大面板（铺满窗口）';
+    this.el.maxBtn.innerHTML = max ? MAX_ICON.off : MAX_ICON.on;
     setSceneInset(this.open && !narrow && !immersive ? PANEL_W + PANEL_GAP * 2 : 0);
+    const mode = immersive ? 'immersive' : !this.open ? 'big' : (max || narrow) ? 'hidden' : 'split';
+    if (mode === 'hidden') Room.clearKeys();
+    setSceneMode(mode);
+    wake();
   },
   immersive(on){
     document.body.classList.toggle('immersive', on);
@@ -104,6 +131,9 @@ const App = {
     s.setProperty('--wash-lt', `rgb(${P.LT})`);
   },
 };
+
+/* 场景左上角的放大按钮：收起面板、场景铺满窗口；再点一下，面板回来 */
+function toggleSceneBig(){ App.setOpen(!App.open); }
 
 /* 门口的控制面板（点它，或者 rabbit 在旁边按 E）：打开面板，跳到设置 */
 function openSettings(){

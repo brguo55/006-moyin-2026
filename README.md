@@ -6,7 +6,8 @@ A planner that runs in the browser: tasks, a pomodoro timer and habit tracking, 
 
 ## Features
 
-- **Tasks** — lists, a Today view, search, notes and due dates. Type 明天 / 周五 / 下周一 at the start or end of a task to set its due date.
+- **Tasks** — 今天至少完成 (today's must-dos) comes first: 3 slots by default (2 to 4), filled with real tasks. Unfinished ones stay until they're done, and finishing them all gets a cheer. Below that: lists, a Today view, search, notes and due dates. Type 明天 / 周五 / 下周一 at the start or end of a task to set its due date.
+- **Bigger views** — the panel's maximize button makes it fill the window (with lists in a side column). Collapsing the panel, or the button next to the speaker icon, lets the scene grow to fill the window instead.
 - **Pomodoro** — three ways to time: a pomodoro (focus + break = one cycle; pick how many cycles a run has, or unlimited, and it rolls on automatically), a countdown timer, and a stopwatch that records how long you worked without a break. Durations go to the second (e.g. 25:05, editable on the Pomodoro page or in Settings). Sessions can be linked to a task, with daily and weekly stats and an immersive full-screen mode. It stays accurate in a background tab and resumes after a reload.
 - **轻重 (Eisenhower matrix)** — tag tasks 马上做 / 排时间 / 顺手做 / 放一放 (important × urgent). Add tasks inside a quadrant and drag them between quadrants.
 - **Habits** — daily check-ins, current and best streaks, and a 22-week grid.
@@ -17,7 +18,7 @@ A planner that runs in the browser: tasks, a pomodoro timer and habit tracking, 
 
 ## Art
 
-The scene is pixel art at 1 pixel = 2 world units, scaled up by whole numbers so pixels stay square. The house is drawn in code (`js/stage/house.js`). rabbit's animations are sprite strips in `assets/rabbit/`, one 80 × 112 frame per cell, converted from the artist's GIFs. They keep the owner's folder and file names, e.g. `00_basic/00_idle_rabbit_right` and `02_pomodoro/00_focus_rabbit_one`. They cover idle (left and right), a takeoff with a shockwave ring, a flame-boosted double jump, landing, napping and waking, two focus loops (tea and an apple), clapping and stretching. His design is asymmetric (robe on one side, mech on the other), so left and right are drawn separately rather than mirrored. A pixel-art brief for commissioning artwork is in [`docs/art-brief/`](docs/art-brief/README.md), with the new direction in [`docs/art-brief/concepts/`](docs/art-brief/concepts/README.md).
+The scene is pixel art at 1 pixel = 2 world units, scaled up by whole numbers so pixels stay square. The house is drawn in code (`js/stage/house.js`). rabbit's animations are sprite strips in `assets/rabbit/`, one 80 × 112 frame per cell, converted from the artist's GIFs. They keep the owner's folder and file names, e.g. `00_idle_rabbit_right` and `40_focus_rabbit_one`. They cover idle (left and right), a takeoff with a shockwave ring, a flame-boosted double jump, landing, napping and waking, two focus loops (tea and an apple), clapping and stretching. His design is asymmetric (robe on one side, mech on the other), so left and right are drawn separately rather than mirrored. A pixel-art brief for commissioning artwork is in [`docs/art-brief/`](docs/art-brief/README.md), with the new direction in [`docs/art-brief/concepts/`](docs/art-brief/concepts/README.md).
 
 ## Your data
 

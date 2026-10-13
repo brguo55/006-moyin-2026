@@ -1,6 +1,6 @@
 "use strict";
 /* ============================================================
-   ui.js：画在画布上的像素控件 —— 背景、镜头外框、底部主题色板、左上角静音
+   ui.js：画在画布上的像素控件 —— 背景、镜头外框、底部主题色板、左上角静音和放大场景
    界面上的一个「像素」= 2 个 CSS 像素（对齐到屏幕像素，放大后也是方方正正的）
    ============================================================ */
 
@@ -103,5 +103,43 @@ function drawMuteBtn(){
   ctx.imageSmoothingEnabled = false;
   ctx.globalAlpha = muteHover ? 1 : 0.8;
   ctx.drawImage(muted ? SPK_OFF : SPK_ON, x, y, 13 * u, 8 * u);
+  ctx.globalAlpha = 1;
+}
+
+/* ---------- 放大场景（小喇叭右边 · 四个角朝外 = 放大，收起面板、场景铺满窗口；朝里 = 恢复） ---------- */
+const BIG_ON = makeSprite([
+  'kkk..kkk',
+  'k......k',
+  'k......k',
+  '........',
+  '........',
+  'k......k',
+  'k......k',
+  'kkk..kkk',
+], SPK_PAL);
+const BIG_OFF = makeSprite([
+  '..k..k..',
+  '..k..k..',
+  'kkk..kkk',
+  '........',
+  '........',
+  'kkk..kkk',
+  '..k..k..',
+  '..k..k..',
+], SPK_PAL);
+let bigHover = false;
+const sceneBtnShown = () => sceneMode === 'split' || sceneMode === 'big';
+function sceneBtnPos(){ const u = uiPx(); return { x: snapS(30 + 20 * u), y: snapS(46 - (bigHover ? u : 0)), u }; }
+function hitSceneBtn(px, py){
+  if (!sceneBtnShown()) return false;
+  const { x, y, u } = sceneBtnPos();
+  return px > x - 3 * u && px < x + 11 * u && py > y - 3 * u && py < y + 11 * u;
+}
+function drawSceneBtn(){
+  if (!sceneBtnShown()) return;
+  const { x, y, u } = sceneBtnPos();
+  ctx.imageSmoothingEnabled = false;
+  ctx.globalAlpha = bigHover ? 1 : 0.8;
+  ctx.drawImage(sceneMode === 'big' ? BIG_OFF : BIG_ON, x, y, 8 * u, 8 * u);
   ctx.globalAlpha = 1;
 }

@@ -66,7 +66,8 @@ const Settings = {
       h('p', null, '勾上的功能才会出现在右边的面板里。'),
       h('div.feature-list', null, ...TABS.filter(t => t.label).map(t =>
         h('label.switch', null, checkBox(!hidden.includes(t.id), () => toggle(t.id), t.label), ' ' + t.label))),
-      h('p.muted', null, '取消勾选只是不显示，里面的数据都还在，重新勾上就回来了。「设置」会一直显示。')));
+      h('p.muted', null, '取消勾选只是不显示，里面的数据都还在，重新勾上就回来了。「设置」会一直显示。'),
+      h('p', null, '放大：面板右上角的方框按钮让面板铺满整个窗口，再点一下恢复。收起面板（›）时，左边的场景会放大铺满窗口；画面左上角小喇叭右边的方框按钮也能切换。')));
 
     /* ---------- 番茄钟：时长可以精确到秒 ---------- */
     kids.push(h('section.set', null,

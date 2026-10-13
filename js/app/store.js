@@ -56,13 +56,14 @@ function freshData(){
   return {
     version: DATA_VERSION,
     lists: [{ id: 'inbox', name: '收件箱', createdAt: now }],
-    tasks: [],
+    tasks: [],           // { id, listId, title, notes, due, done, doneAt, createdAt, quad（轻重 1–4）, top（钉进「今天至少完成」的时间） }
     habits: [],
     checks: {},          // { 习惯id: { 'YYYY-MM-DD': 1 } }
     pomos: [],           // { id, start, end, minutes, taskId }
     countdowns: [],      // { id, name, date: 'YYYY-MM-DD', yearly, color, createdAt }
     settings: { weather: 0, theme: 2, ambient: true, muted: false, focusSec: 1500, shortSec: 300, longSec: 900, longEvery: 4,   // 番茄钟时长按秒存（25:05 这种也行）
                 cycles: 4, timerSec: 600,   // 番茄钟一轮几个循环（0 = 不限）；计时器时长（秒）
+                mustN: 3,                   // 任务页最上面「今天至少完成」几件（2–4）
                 hidden: [] },   // hidden：设置里取消勾选、不在面板里显示的功能（页签 id）
     meta: { createdAt: now, updatedAt: now },
   };

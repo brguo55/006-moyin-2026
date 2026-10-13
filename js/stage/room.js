@@ -75,11 +75,11 @@ const Room = {
   hover: null, nearPanel: false,    // 鼠标指着什么；rabbit 是不是在门口的控制面板旁边
   s: 1, k: 2, kd: 2, ox: 0, oy: 0,
 
-  /* ---------- 布局：镜头画面居中在舞台可用区域，最大 1 倍；
+  /* ---------- 布局：镜头画面居中在舞台可用区域；面板开着时最大 1 倍，收起面板（场景放大）时铺满窗口；
      一个像素放大成整数个屏幕像素（kd），像素才是方方正正、一样大的 ---------- */
   layout(){
     const aw = Math.max(240, W - insetR);
-    const s = Math.max(0.3, Math.min(1, aw * 0.9 / VIEW_W, (H - 200) / VIEW_H));
+    const s = Math.max(0.3, Math.min(sceneMode === 'big' ? 99 : 1, aw * 0.9 / VIEW_W, (H - 200) / VIEW_H));
     this.kd = Math.max(1, Math.floor(s * PX * DPR + 1e-6));
     this.k = this.kd / DPR;            // 一个像素在屏幕上多宽（CSS 像素）
     this.s = this.k / PX;              // 世界单位 → CSS 像素

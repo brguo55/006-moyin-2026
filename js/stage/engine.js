@@ -21,6 +21,11 @@ let W = 0, H = 0, DPR = 1;
 let insetR = 0, CX = 0, cxTo = 0;
 function sceneLayout(){ cxTo = Math.max(240, W - insetR) / 2; }
 function setSceneInset(px){ insetR = px; sceneLayout(); }
+/* 场景现在怎么显示（app.js 设）：
+   'split' 面板开着，场景最大 1 倍；'big' 面板收起来了，场景放大铺满窗口；
+   'hidden' 面板铺满了窗口，场景被挡住（不画、也不听按键）；'immersive' 番茄钟沉浸，场景照常、不显示放大按钮 */
+let sceneMode = 'split';
+function setSceneMode(m){ sceneMode = m; }
 function resize(){
   DPR = Math.min(window.devicePixelRatio || 1, 2);
   W = window.innerWidth; H = window.innerHeight;
