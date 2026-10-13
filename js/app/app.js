@@ -179,11 +179,12 @@ function onDataReplaced(){
   Backup.subscribe(() => { App.renderBanner(); if (App.tab === 'set') Settings.refresh(); });
   await Backup.init();
   await Pomo.init();
+  Tasks.rollover();          // 前几天没做完的任务挪到今天
   App.showTab(App.tab);
   App.setOpen(wasOpen);    // showTab 会顺手打开面板；还原成上次的开合状态
-  // 跨过午夜：「今天」要换一天
+  // 跨过午夜：「今天」要换一天，没做完的任务也跟着挪到新的今天
   let lastDay = dayKey();
-  setInterval(() => { if (dayKey() !== lastDay){ lastDay = dayKey(); App.render(); } }, 60e3);
+  setInterval(() => { if (dayKey() !== lastDay){ lastDay = dayKey(); Tasks.rollover(); App.render(); } }, 60e3);
 
   // 离线可用：只在 http(s) 下注册（直接双击打开的 file:// 不支持）
   if ('serviceWorker' in navigator && location.protocol.startsWith('http')){

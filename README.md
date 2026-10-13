@@ -6,7 +6,7 @@ A planner that runs in the browser: tasks, a pomodoro timer and habit tracking, 
 
 ## Features
 
-- **Tasks** — 今天至少完成 (today's must-dos) comes first: 3 slots by default (2 to 4), filled with real tasks. Unfinished ones stay until they're done, and finishing them all gets a cheer. Below that: lists, a Today view, search, notes and due dates. Type 明天 / 周五 / 下周一 at the start or end of a task to set its due date.
+- **Tasks** — 今天至少完成 (today's must-dos) comes first: 3 slots by default (2 to 4), filled with real tasks. Unfinished ones stay until they're done, and finishing them all gets a cheer. Below that: lists, a Today view, search, notes and due dates. Unfinished tasks move to the new day at midnight instead of sitting on a past date. Type 明天 / 周五 / 下周一 at the start or end of a task to set its due date.
 - **Bigger views** — the panel's maximize button makes it fill the window (with lists in a side column). Collapsing the panel, or the button next to the speaker icon, lets the scene grow to fill the window instead.
 - **Pomodoro** — three ways to time: a pomodoro (focus + break = one cycle; pick how many cycles a run has, or unlimited, and it rolls on automatically), a countdown timer, and a stopwatch that records how long you worked without a break. Durations go to the second (e.g. 25:05, editable on the Pomodoro page or in Settings). Sessions can be linked to a task, with daily and weekly stats and an immersive full-screen mode. It stays accurate in a background tab and resumes after a reload.
 - **轻重 (Eisenhower matrix)** — tag tasks 马上做 / 排时间 / 顺手做 / 放一放 (important × urgent). Add tasks inside a quadrant and drag them between quadrants.
