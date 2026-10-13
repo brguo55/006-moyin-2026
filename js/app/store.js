@@ -65,6 +65,7 @@ function freshData(){
     settings: { weather: 0, theme: 2, ambient: true, muted: false, focusSec: 1500, shortSec: 300, longSec: 900, longEvery: 4,   // 番茄钟时长按秒存（25:05 这种也行）
                 cycles: 4, timerSec: 600,   // 番茄钟一轮几个循环（0 = 不限）；计时器时长（秒）
                 mustN: 3,                   // 任务页最上面「今天至少完成」几件（2–4）
+                napMin: 3,                  // 多少分钟没人理 rabbit，他就打瞌睡（0 = 平时不睡）
                 hidden: [] },   // hidden：设置里取消勾选、不在面板里显示的功能（页签 id）
     meta: { createdAt: now, updatedAt: now },
   };

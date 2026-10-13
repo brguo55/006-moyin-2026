@@ -31,7 +31,7 @@ const APEX_V = 90, APEX_GRAV = 0.55;   // 按住空格时，快到最高点那�
 const AIR_CONTROL = 15;                // 空中转向的灵敏度（地面是 22）
 const COYOTE = 0.09, BUFFER = 0.12;    // 走出边缘后还能起跳的时间 / 提前按跳的缓冲
 const FG_PAR = 0.3, FAR_PAR = 0.5;     // 前景比中景多移动 30%；窗外景色只移动一半
-const NAP_AFTER = 30;                  // 多少秒没操控 rabbit，他就打瞌睡（正式版可以调长）；按真实时间算，切到别的窗口也照样计时
+const NAP_MIN = 3;                     // 默认多少分钟没操控 rabbit，他就打瞌睡（设置 → 小房子 里能改，0 = 不睡）；按真实时间算，切到别的窗口也照样计时
 
 /* ---------- 能站的面（单向平台）[x0, x1, y] ---------- */
 const PLATS = [];
@@ -161,6 +161,12 @@ const Room = {
     this.act = { kind, t: 0 };
     if (RABBIT.anims[kind]) this.facing = 1;
   },
+  /* 多久没操控就打瞌睡（毫秒）：看设置里的 napMin，0 = 平时不睡 */
+  _napAfter(){
+    const s = typeof Store !== 'undefined' && Store.data ? Store.data.settings : null;
+    const m = s && s.napMin != null ? s.napMin : NAP_MIN;
+    return m > 0 ? m * 60e3 : Infinity;
+  },
   /* 一次性动作有多长（秒） */
   _actLen(kind){
     const R = RABBIT, A = R.anims, sum = (a, frames) => frames.reduce((s, f) => s + a.ms[f], 0) / 1000;
@@ -207,12 +213,12 @@ const Room = {
         }
       }
     }
-    // 打瞌睡：NAP_AFTER 秒没操控（或者长休息刚开始）→ 睡着。站在地上、家具、阁楼、床上都行，只要不在空中
+    // 打瞌睡：几分钟没操控（设置里的 napMin）或者长休息刚开始 → 睡着。站在地上、家具、阁楼、床上都行，只要不在空中
     // 用真实时间算：窗口被挡住时浏览器会暂停画面，按帧算的话等多久都不会睡
     // 睡着以后按键都不管用（keyDown），点他一下才醒（click → wake）
     if (this.napT >= 0) this.napT += dt;
     else if (this.grounded && !this.act && !focusOn && Math.abs(this.vx) < 1
-      && (Date.now() - this.lastInput > NAP_AFTER * 1000 || this.breakNap)){
+      && (Date.now() - this.lastInput > this._napAfter() || this.breakNap)){
       this.napT = 0; this.facing = 1; this.napHinted = false; this.breakNap = false;
     }
     // 睡着了，场景慢慢暗下来；醒了很快亮回去

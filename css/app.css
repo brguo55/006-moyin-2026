@@ -318,6 +318,8 @@ body.immersive #immersive{ display: block; }
 .set h3{ font-family: var(--hand); font-weight: normal; font-size: 18px; margin: 4px 0 6px; }
 .set h4{ font-weight: normal; font-size: 12px; margin: 14px 0 4px; }
 .set p{ margin: 6px 0; line-height: 1.6; font-size: 12px; }
+.nap-row{ display: flex; align-items: center; gap: 8px; margin: 8px 0 2px; font-size: 12px; }
+.nap-row select{ color: var(--ink); }
 .backup-status{ padding: 6px 10px; border-radius: 0; background: color-mix(in srgb, var(--wash) 30%, transparent); }
 .backup-status.warn{ background: rgba(160,82,61,.08); }
 .tips{ margin: 12px 0 0; padding-left: 18px; color: var(--ink-2); font-size: 12px; line-height: 1.65; }
