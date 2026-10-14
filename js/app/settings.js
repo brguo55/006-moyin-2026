@@ -1,6 +1,6 @@
 "use strict";
 /* ============================================================
-   app/settings.js：设置页 —— 备份（最重要）/ 面板显示 / 番茄钟 / 小房间 / 声音 / 安装 / 关于
+   app/settings.js：设置页 —— 备份（最重要）/ 从滴答清单导入 / 面板显示 / 番茄钟 / 小房间 / 声音 / 安装 / 关于
    ============================================================ */
 
 const Settings = {
@@ -11,7 +11,9 @@ const Settings = {
     this.el.root = root;
     this.el.file = h('input', { type: 'file', accept: '.json,application/json', hidden: true,
       onchange: e => { const f = e.target.files[0]; e.target.value = ''; if (f) Backup.importFile(f); } });
-    document.body.append(this.el.file);
+    this.el.csv = h('input', { type: 'file', accept: '.csv,text/csv', hidden: true,
+      onchange: e => { const f = e.target.files[0]; e.target.value = ''; if (f) TickTick.importFile(f); } });
+    document.body.append(this.el.file, this.el.csv);
     addEventListener('beforeinstallprompt', e => { e.preventDefault(); this.installEvt = e; this.refresh(); });
   },
 
@@ -56,6 +58,15 @@ const Settings = {
         h('li', null, '备份文件夹千万不要放在 GitHub 仓库的文件夹里——仓库是公开的。'),
         h('li', null, '清除浏览器的「Cookie 和网站数据」、卸载 App 时勾选「同时清除数据」，都会删掉本机数据；有备份就能找回。'),
         h('li', null, B.persisted ? '浏览器已答应：空间紧张时也不会自动清掉听雨的数据。' : '建议用 Chrome / Edge 并安装成 App，数据更稳；Safari 会清掉一段时间没打开的网站数据。'))));
+
+    /* ---------- 从滴答清单搬家 ---------- */
+    kids.push(h('section.set', null,
+      h('h3', null, '从滴答清单导入'),
+      h('p', null, '在滴答清单网页版的设置里找到「生成备份」（在账户相关的设置里），会下载一个 .csv 文件。在这里选这个文件，就能把清单、任务、标签、子任务、截止时间、提醒和重复都搬过来；优先级会放进「轻重」（高 → 马上做，中 → 排时间，低 → 顺手做）。'),
+      h('div.btn-row', null,
+        h('button.btn', { onclick: () => this.el.csv.click() }, '选择滴答清单的备份（.csv）'),
+        TickTick.lastBatch() ? h('button.btn.ghost', { onclick: () => TickTick.undo() }, '撤销上次导入') : null),
+      h('p.muted', null, '只会添加，不会改动或删除听雨里已有的东西；同一个任务不会导入两次。')));
 
     /* ---------- 面板显示：每个功能可以选择要不要 ---------- */
     const hidden = d.settings.hidden;

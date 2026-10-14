@@ -1,7 +1,8 @@
 "use strict";
 /* ============================================================
    app/tasks.js：任务 —— 最上面是「今天至少完成」，下面是清单 / 今天 / 全部，添加、完成、编辑、搜索
-   标题开头或结尾写「今天 / 明天 / 后天 / 周三 / 下周一」会自动设成截止日期
+   标题开头或结尾写「今天 / 明天 / 后天 / 周三 / 下周一」会自动设成截止日期，写「15:00」「下午3点」会设成时间
+   时间、提醒、重复的规则在 schedule.js；子任务：task.subs = [{ id, title, done }]
    过了午夜（或者隔几天才打开），没做完、日期已经过去的任务自动挪到今天，不留在过去的日期上
    ------------------------------------------------------------
    今天至少完成：每天挑几件一定要做完的事（默认 3 件，可以 2–4 件，settings.mustN）。
@@ -11,25 +12,56 @@
    自己建的清单可以拖动排顺序；今天 / 全部 / 收件箱固定在最前面
    ============================================================ */
 
-/* 解析标题首尾的口语日期 → { title, due } */
+/* 解析标题首尾的口语日期和时间 → { title, due, time }
+   日期：今天 / 今晚 / 明天 / 后天 / 大后天 / 周三 / 下周一；时间：15:00、下午3点、3点半、晚上8点15
+   可以连着写（明天下午3点 开会 / 开会 周五 15:00）；只写了时间就算今天
+   「15:00」这种前后要有空格（「比例2:1」不算）；「3点」前面是「第」或数字的也不算（「复习第3点」） */
+const QD_DATE = '今天|今晚|明天|后天|大后天|下?周[一二三四五六日天]';
+const QD_TIME_CN = '(上午|早上|中午|下午|晚上)?(\\d{1,2})点(半|(\\d{1,2})分?)?';
+const QD_TIME_NUM = '(\\d{1,2})[:：](\\d{2})';
+const QD_RE = {
+  dateHead: new RegExp(`^(${QD_DATE})\\s*`), dateTail: new RegExp(`\\s*(${QD_DATE})$`),
+  cnHead: new RegExp(`^${QD_TIME_CN}\\s*`), cnTail: new RegExp(`${QD_TIME_CN}$`),
+  numHead: new RegExp(`^${QD_TIME_NUM}(?:\\s+|$)`), numTail: new RegExp(`(?:^|\\s)${QD_TIME_NUM}$`),
+};
 function parseQuickDue(raw){
-  const re = /^(今天|明天|后天|大后天|下?周[一二三四五六日天])\s*|\s*(今天|明天|后天|大后天|下?周[一二三四五六日天])$/;
-  const m = raw.match(re);
-  if (!m) return { title: raw.trim(), due: null };
-  const word = m[1] || m[2], today = dayKey();
-  let due;
-  const off = { '今天': 0, '明天': 1, '后天': 2, '大后天': 3 }[word];
-  if (off != null) due = addDays(today, off);
-  else {
+  const today = dayKey();
+  let s = raw.trim(), due = null, time = null, night = false;
+  const cut = m => { s = (s.slice(0, m.index) + s.slice(m.index + m[0].length)).trim(); };
+  const dateOf = word => {
+    const off = { '今天': 0, '今晚': 0, '明天': 1, '后天': 2, '大后天': 3 }[word];
+    if (off != null) return addDays(today, off);
     const idx = '一二三四五六日'.indexOf(word.slice(-1) === '天' ? '日' : word.slice(-1)); // 周一=0 … 周日=6
     const dow = (keyToDate(today).getDay() + 6) % 7;                                    // 今天是本周第几天（周一=0）
     let d = addDays(today, idx - dow);
     if (word.startsWith('下')) d = addDays(d, 7);
     else if (d < today) d = addDays(d, 7);
-    due = d;
+    return d;
+  };
+  const timeOf = (period, hh, mm) => {
+    let h = +hh;
+    const m = +mm || 0;
+    if ((period === '下午' || period === '晚上' || (!period && night)) && h < 12) h += 12;
+    else if (period === '中午' && h < 11) h += 12;
+    return h <= 23 && m <= 59 ? `${pad2(h)}:${pad2(m)}` : null;
+  };
+  for (let i = 0; i < 4; i++){
+    let m;
+    if (!due && ((m = s.match(QD_RE.dateHead)) || (m = s.match(QD_RE.dateTail)))){
+      due = dateOf(m[1]); night = night || m[1] === '今晚'; cut(m); continue;
+    }
+    if (!time && ((m = s.match(QD_RE.cnHead)) || ((m = s.match(QD_RE.cnTail)) && !/[第\d]/.test(s[m.index - 1] || '')))){
+      const tm = timeOf(m[1], m[2], m[3] === '半' ? 30 : m[4]);
+      if (tm){ time = tm; cut(m); continue; }
+    }
+    if (!time && ((m = s.match(QD_RE.numHead)) || (m = s.match(QD_RE.numTail)))){
+      const tm = timeOf(null, m[1], m[2]);
+      if (tm){ time = tm; cut(m); continue; }
+    }
+    break;
   }
-  const title = raw.replace(re, '').trim();
-  return title ? { title, due } : { title: raw.trim(), due: null };
+  if (!s) return { title: raw.trim(), due: null, time: null };   // 只有日期 / 时间、没有内容：整句当标题
+  return { title: s, due: due || (time ? today : null), time };
 }
 
 /* 轻重（四象限）：任务的 quad 字段取 1–4，没有就是未分类。颜色取自水体主题 */
@@ -80,7 +112,7 @@ const Tasks = {
   _lists(){ return Store.data.lists; },
   _hint(){
     const q = parseQuickDue(this.el.input.value);
-    this.el.hint.textContent = q.due && this.el.input.value.trim() ? `截止：${dueLabel(q.due)}（${q.due}）` : '';
+    this.el.hint.textContent = q.due && this.el.input.value.trim() ? `截止：${dueText(q)}（${q.due}）` : '';
   },
   _add(){
     const raw = this.el.input.value;
@@ -88,7 +120,9 @@ const Tasks = {
     const q = parseQuickDue(raw);
     const due = this.el.date.value || q.due || (this.view === 'today' ? dayKey() : null);
     const listId = this._lists().some(l => l.id === this.view) ? this.view : 'inbox';
-    Store.update(d => d.tasks.push({ id: uid(), listId, title: q.title, notes: '', due, done: false, doneAt: 0, createdAt: Date.now() }));
+    const time = due ? q.time : null;
+    if (time) Reminders.askPermission();
+    Store.update(d => d.tasks.push({ id: uid(), listId, title: q.title, notes: '', due, time, remind: time ? 0 : null, done: false, doneAt: 0, createdAt: Date.now() }));
     this.el.input.value = ''; this.el.date.value = ''; this._hint();
   },
 
@@ -125,7 +159,9 @@ const Tasks = {
     if (!raw.trim() || this._must().length >= this._mustN()) return;
     const q = parseQuickDue(raw), now = Date.now();
     this.el.mustInput.value = '';
-    Store.update(d => d.tasks.push({ id: uid(), listId: 'inbox', title: q.title, notes: '', due: q.due || dayKey(), done: false, doneAt: 0, createdAt: now, top: now }));
+    if (q.time) Reminders.askPermission();
+    Store.update(d => d.tasks.push({ id: uid(), listId: 'inbox', title: q.title, notes: '', due: q.due || dayKey(), time: q.time, remind: q.time ? 0 : null,
+      done: false, doneAt: 0, createdAt: now, top: now }));
   },
   /* 设为 / 移出「今天至少完成」（移出后任务还在下面的清单里） */
   setMust(id, on){
@@ -137,6 +173,7 @@ const Tasks = {
   /* ---------- 视图切换：今天 / 全部 / 各清单 ---------- */
   renderChips(){
     const d = Store.data, today = dayKey(), must = new Set(this._must().map(t => t.id));
+    if (this.view !== 'today' && this.view !== 'all' && !d.lists.some(l => l.id === this.view)) this.view = 'inbox';   // 清单被删了（比如撤销导入）
     const undone = d.tasks.filter(t => !t.done && !must.has(t.id));   // 和下面的清单一样：不算钉在上面的
     const chip = (id, label, n) => h('button.chip' + (this.view === id ? '.on' : ''),
       { onclick: () => { this.view = id; this.openId = null; this.refresh(); } }, label, n ? h('span.n', null, n) : null);
@@ -217,8 +254,8 @@ const Tasks = {
     if (q) ts = ts.filter(t => [t.title, t.notes, ...(t.tags || []).map(g => '#' + g)].join(' ').toLowerCase().includes(q));
     else if (this.view === 'today') ts = ts.filter(t => t.done ? dayKey(new Date(t.doneAt)) === today : (t.due && t.due <= today));
     else if (this.view !== 'all') ts = ts.filter(t => t.listId === this.view);
-    const undone = ts.filter(t => !t.done).sort((a, b) =>
-      (a.due || '9999') < (b.due || '9999') ? -1 : (a.due || '9999') > (b.due || '9999') ? 1 : a.createdAt - b.createdAt);
+    const key = t => (t.due || '9999') + ' ' + (t.time || '99:99');   // 先按日期，同一天有时间的按时间排在前面
+    const undone = ts.filter(t => !t.done).sort((a, b) => key(a) < key(b) ? -1 : key(a) > key(b) ? 1 : a.createdAt - b.createdAt);
     const done = ts.filter(t => t.done).sort((a, b) => b.doneAt - a.doneAt);
     return { undone, done };
   },
@@ -238,7 +275,7 @@ const Tasks = {
   },
   /* 一行任务；slot = 在「今天至少完成」里的第几件（前面多一个序号，后面多一个移出的 ×） */
   _row(t, slot){
-    const today = dayKey(), d = Store.data;
+    const d = Store.data;
     const list = d.lists.find(l => l.id === t.listId);
     const pomos = d.pomos.filter(p => p.taskId === t.id).length;
     const open = this.openId === t.id;
@@ -248,9 +285,11 @@ const Tasks = {
       h('div.t-main', { onclick: () => { this.openId = open ? null : t.id; this.renderMust(); this.renderList(); } },
         h('div.t-title', null, t.title),
         h('div.t-meta', null,
-          t.due ? h('span' + (!t.done && t.due < today ? '.overdue' : ''), null, dueLabel(t.due)) : null,
+          t.due ? h('span' + (isLate(t) ? '.overdue' : ''), null, dueText(t)) : null,
+          t.repeat && !t.done ? h('span.rep', null, repeatLabel(t.repeat)) : null,
           (slot || this.view === 'today' || this.view === 'all' || this.query) && list && list.id !== 'inbox' ? h('span', null, list.name) : null,
           ...(t.tags || []).map(g => h('span.tag', null, '#' + g)),
+          t.subs && t.subs.length ? h('span', null, `子任务 ${t.subs.filter(x => x.done).length}/${t.subs.length}`) : null,
           t.notes ? h('span', null, '有备注') : null,
           pomos ? h('span.pomo-n', null, `番茄 ×${pomos}`) : null,
           QUADS[t.quad] ? h('span.qtag', { style: quadVars(t.quad), title: QUADS[t.quad].name }, QUADS[t.quad].act) : null,
@@ -265,8 +304,9 @@ const Tasks = {
     return h('div.t-detail', null,
       h('input.t-edit-title', { value: t.title, maxLength: 200, onchange: e => { const v = e.target.value.trim(); if (v) set('title', v); } }),
       h('textarea.t-notes', { value: t.notes, placeholder: '备注', rows: 3, onchange: e => set('notes', e.target.value) }),
+      this._subEdit(t),
       h('div.t-fields', null,
-        h('label', null, '截止 ', h('input', { type: 'date', value: t.due || '', onchange: e => set('due', e.target.value || null) })),
+        this._whenFields(t),
         h('label', null, '清单 ', h('select', { onchange: e => set('listId', e.target.value) },
           ...Store.data.lists.map(l => h('option', { value: l.id, selected: l.id === t.listId }, l.name)))),
         h('div.tag-field', null, '标签 ', this._tagEdit(t)),   // 不用 label：点「标签」两个字会误点到 × 按钮
@@ -288,7 +328,77 @@ const Tasks = {
   /* 新的一天：没做完、日期已经过去的任务挪到今天（打开时和过午夜时各做一次） */
   rollover(){
     const today = dayKey(), late = t => !t.done && t.due && t.due < today;
-    if (Store.data.tasks.some(late)) Store.update(d => { for (const t of d.tasks) if (late(t)) t.due = today; });
+    if (Store.data.tasks.some(late)) Store.update(d => { for (const t of d.tasks) if (late(t)){ t.due = today; Reminders.settle(t); } });
+  },
+  /* 截止日期 + 时间 + 提醒 + 重复：改了就安静保存，这一小块自己重画（display: contents，和后面的清单、标签排在一行里） */
+  _whenFields(t){
+    const box = h('span.when-fields');
+    const cur = () => Store.data.tasks.find(y => y.id === t.id) || t;
+    const put = fn => {
+      Store.update(d => { const x = d.tasks.find(y => y.id === t.id); if (x){ fn(x); Reminders.settle(x); } }, true);
+      draw();
+    };
+    const draw = () => {
+      const x = cur();
+      box.replaceChildren(...[
+        h('label', null, '截止 ',
+          h('input', { type: 'date', value: x.due || '', onchange: e => put(y => {
+            y.due = e.target.value || null;
+            if (!y.due){ y.time = null; y.remind = null; y.repeat = null; }                 // 没日期就没有时间和重复
+            else if (y.repeat) y.repeat = makeRepeat(y.repeat.type, y.due, y.repeat);       // 每月几号 / 每年几月几号跟着新日期
+          }) }),
+          h('input.t-time', { type: 'time', value: x.time || '', title: '时间（可不填）', onchange: e => put(y => {
+            y.time = e.target.value || null;
+            if (!y.time){ y.remind = null; return; }
+            if (!y.due) y.due = dayKey();
+            if (y.remind == null) y.remind = 0;   // 设了时间默认准时提醒
+            Reminders.askPermission();
+          }) })),
+        x.time ? h('label', null, '提醒 ', h('select', { onchange: e => put(y => { y.remind = e.target.value === '' ? null : +e.target.value; }) },
+          ...REMIND_OPTS.map(([v, s]) => h('option', { value: v, selected: x.remind === v }, s)),
+          h('option', { value: '', selected: x.remind == null }, '不提醒'))) : null,
+        h('label', null, '重复 ', h('select', { onchange: e => put(y => {
+          if (e.target.value && !y.due) y.due = dayKey();
+          y.repeat = makeRepeat(e.target.value, y.due, y.repeat);
+        }) }, ...REPEAT_OPTS.map(([v, s]) => h('option', { value: v, selected: (x.repeat ? x.repeat.type : '') === v }, s)))),
+        x.repeat && x.repeat.type === 'week' ? h('span.week-pick', { title: '每周哪几天' }, ...WEEK_ORDER.map(wd =>
+          h('button.wd' + (x.repeat.days.includes(wd) ? '.on' : ''), { onclick: () => put(y => {
+            const ds = new Set(y.repeat.days);
+            if (!ds.has(wd)) ds.add(wd); else if (ds.size > 1) ds.delete(wd);   // 至少留一天
+            y.repeat = { ...y.repeat, days: [...ds] };
+          }) }, WEEK[wd]))) : null,
+      ].filter(Boolean));
+    };
+    draw();
+    return box;
+  },
+  /* 子任务：打勾 / 改字 / ×；最后的输入框回车加一条。安静保存，收起时再刷新 */
+  _subEdit(t){
+    const subs = (t.subs || []).map(x => ({ ...x }));
+    const save = () => Store.update(d => { const x = d.tasks.find(y => y.id === t.id); if (x) x.subs = subs.map(y => ({ ...y })); }, true);
+    const box = h('div.subs');
+    const input = h('input.sub-add', { placeholder: '＋ 子任务（回车添加）', maxLength: 200, onkeydown: e => {
+      if (e.key !== 'Enter' || e.isComposing || !input.value.trim()) return;
+      subs.push({ id: uid(), title: input.value.trim(), done: false });
+      input.value = ''; save(); draw(true);
+    } });
+    const draw = refocus => {
+      box.replaceChildren(...subs.map(x => h('div.sub' + (x.done ? '.done' : ''), null,
+        checkBox(x.done, () => { x.done = !x.done; save(); draw(false); }, '完成子任务'),
+        h('input.sub-title', { value: x.title, maxLength: 200, onchange: e => { const v = e.target.value.trim(); if (v){ x.title = v; save(); } } }),
+        h('button.sub-x', { title: '删掉这条子任务', onclick: () => { subs.splice(subs.indexOf(x), 1); save(); draw(false); } }, '×'))), input);
+      if (refocus) input.focus();
+    };
+    draw(false);
+    return box;
+  },
+  /* 跳到某个任务（点了提醒的系统通知、轻重里点标题）：打开任务页、展开它 */
+  reveal(id){
+    if (!Store.data.tasks.some(x => x.id === id)) return;
+    this.view = 'all'; this.query = ''; this.el.search.value = ''; this.openId = id;
+    App.showTab('tasks');
+    const row = this.el.list.querySelector('.task.open') || this.el.must.querySelector('.must-row.open');
+    if (row) row.scrollIntoView({ block: 'center' });
   },
   /* 标签编辑：已有的标签（× 去掉）+ 小输入框（回车或逗号加上；空着按退格删最后一个；会提示用过的标签）。安静保存，收起时再刷新 */
   _tagEdit(t){
@@ -318,17 +428,33 @@ const Tasks = {
     draw(false);
     return box;
   },
+  /* 打勾 / 取消。重复的任务做完 → 照规则生成下一次（子任务都还原成没做）；
+     刚做完又取消 → 刚才生成的下一次（还没做的话）收回去 */
   toggleDone(id){
-    let nowDone = false;
+    let nowDone = false, next = null;
     const n = this._mustN(), before = this._mustDone();
     Store.update(d => {
       const t = d.tasks.find(x => x.id === id);
       if (!t) return;
       t.done = !t.done; t.doneAt = t.done ? Date.now() : 0; nowDone = t.done;
+      if (t.done && t.repeat && t.due){
+        const due = nextDue(t.repeat, t.due);
+        if (!due) return;
+        next = { ...t, id: uid(), due, done: false, doneAt: 0, createdAt: Date.now(), top: 0, remindedAt: 0,
+          subs: (t.subs || []).map(x => ({ ...x, id: uid(), done: false })) };
+        delete next.nextId;
+        d.tasks.push(next);
+        t.nextId = next.id;
+      } else if (!t.done && t.nextId){
+        const i = d.tasks.findIndex(x => x.id === t.nextId && !x.done);
+        if (i >= 0) d.tasks.splice(i, 1);
+        delete t.nextId;
+      }
     });
     if (!nowDone) return;
     celebrate();   // 完成一件事：rabbit 拍手
     if (before < n && this._mustDone() >= n) toast(`今天至少完成的 ${n} 件事，都做到了！`);
+    else if (next) toast(`下一次：${dueText(next)}（${repeatLabel(next.repeat)}）`);
   },
 };
 

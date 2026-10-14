@@ -92,7 +92,7 @@ body.panel-closed:not(.immersive) #opener{ display: flex; }
 .warn{ color: var(--warn); }
 .ok{ color: var(--ok); }
 
-input[type=text], input:not([type]), input[type=search], input[type=date], input[type=number], textarea, select{
+input[type=text], input:not([type]), input[type=search], input[type=date], input[type=time], input[type=number], textarea, select{
   background: transparent; border: 0; border-bottom: 2px solid var(--ink-3); border-radius: 0; padding: 6px 2px; outline: none; }
 input:focus, textarea:focus, select:focus{ border-bottom-color: var(--ink); }
 textarea{ border: 2px solid var(--ink-3); border-radius: 0; padding: 6px 8px; resize: vertical; }
@@ -159,6 +159,7 @@ select{ cursor: pointer; }
 .t-meta .overdue{ color: var(--warn); }
 .t-meta .pomo-n{ color: var(--ok); }
 .t-meta .tag{ color: color-mix(in srgb, var(--wash-dk) 50%, var(--ink)); }
+.t-meta .rep{ color: var(--ok); }
 /* 任务详情里的标签：#标签 ×，后面一个小输入框 */
 .tag-field{ display: flex; align-items: center; flex-wrap: wrap; gap: 4px; }
 .tag-edit{ display: inline-flex; flex-wrap: wrap; align-items: center; gap: 4px; }
@@ -171,6 +172,22 @@ select{ cursor: pointer; }
 .t-detail{ padding: 4px 2px 14px 30px; border-bottom: 2px dashed var(--line); display: flex; flex-direction: column; gap: 8px; }
 .t-edit-title{ font-size: 12px; }
 .t-fields{ display: flex; gap: 14px; flex-wrap: wrap; font-size: 12px; color: var(--ink-2); }
+.when-fields{ display: contents; }   /* 截止 / 提醒 / 重复自己重画，但和后面的清单、标签排在同一行里 */
+.t-time{ width: 96px; margin-left: 6px; }
+.week-pick{ display: inline-flex; align-items: center; gap: 2px; }
+.wd{ width: 22px; height: 22px; padding: 0; border: 2px solid var(--ink-3); background: transparent; cursor: pointer; color: var(--ink-2); font-size: 12px; }
+.wd:hover{ border-color: var(--ink); color: var(--ink); }
+.wd.on{ border-color: var(--ink); color: var(--ink); background: color-mix(in srgb, var(--wash) 55%, transparent); }
+/* 子任务：任务详情里、备注下面 */
+.subs{ display: flex; flex-direction: column; gap: 2px; }
+.sub{ display: flex; align-items: center; gap: 8px; }
+.sub-title{ flex: 1; min-width: 0; padding: 3px 2px; font-size: 12px; border-bottom-color: transparent; }
+.sub-title:hover{ border-bottom-color: var(--line); }
+.sub.done .sub-title{ color: var(--ink-2); text-decoration: line-through; text-decoration-color: var(--ink-3); }
+.sub-x{ border: 0; background: none; cursor: pointer; padding: 0 4px; color: var(--ink-3); font-size: 12px; visibility: hidden; }
+.sub:hover .sub-x, .sub-x:focus{ visibility: visible; }
+.sub-x:hover{ color: var(--warn); }
+.sub-add{ margin-left: 26px; padding: 3px 2px; font-size: 12px; }
 .done-toggle{ border: 0; background: none; cursor: pointer; color: var(--ink-2); padding: 12px 2px 4px; font-size: 12px; }
 .empty{ color: var(--ink-2); padding: 26px 4px; text-align: center; font-family: var(--hand); font-size: 12px; }
 .search-row{ margin-top: 18px; }

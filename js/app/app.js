@@ -178,6 +178,7 @@ function onDataReplaced(){
   await Backup.init();
   await Pomo.init();
   Tasks.rollover();          // 前几天没做完的任务挪到今天
+  Reminders.start();         // 到点提醒（schedule.js）
   App.showTab(App.tab);
   App.setOpen(wasOpen);    // showTab 会顺手打开面板；还原成上次的开合状态
   // 跨过午夜：「今天」要换一天，没做完的任务也跟着挪到新的今天

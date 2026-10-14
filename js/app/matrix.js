@@ -40,7 +40,8 @@ const Matrix = {
     const input = h('input.quad-add', { placeholder: '＋ 添加', maxLength: 200, onkeydown: e => {
       if (e.key !== 'Enter' || e.isComposing || !input.value.trim()) return;
       const p = parseQuickDue(input.value);
-      Store.update(d => d.tasks.push({ id: uid(), listId: 'inbox', title: p.title, notes: '', due: p.due,
+      if (p.time) Reminders.askPermission();
+      Store.update(d => d.tasks.push({ id: uid(), listId: 'inbox', title: p.title, notes: '', due: p.due, time: p.time, remind: p.time ? 0 : null,
         done: false, doneAt: 0, createdAt: Date.now(), quad: q }));
       setTimeout(() => { const again = this.el.grid.querySelector(`.quad[data-q="${q}"] .quad-add`); if (again) again.focus(); });
     } });
@@ -63,12 +64,11 @@ const Matrix = {
   },
 
   _item(t){
-    const today = dayKey();
     return h('div.q-item', { draggable: true, title: '拖到别的格子里换分类；点标题看详情',
         ondragstart: e => { e.dataTransfer.setData('text/plain', t.id); e.dataTransfer.effectAllowed = 'move'; e.currentTarget.classList.add('dragging'); },
         ondragend: e => e.currentTarget.classList.remove('dragging') },
       checkBox(false, () => Tasks.toggleDone(t.id)),
-      h('span.q-title', { onclick: () => { Tasks.view = 'all'; Tasks.query = ''; Tasks.el.search.value = ''; Tasks.openId = t.id; App.showTab('tasks'); } }, t.title),
-      t.due ? h('span.q-due' + (t.due < today ? '.overdue' : ''), null, dueLabel(t.due)) : null);
+      h('span.q-title', { onclick: () => Tasks.reveal(t.id) }, t.title),
+      t.due ? h('span.q-due' + (isLate(t) ? '.overdue' : ''), null, dueText(t)) : null);
   },
 };
