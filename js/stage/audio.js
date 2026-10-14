@@ -15,7 +15,8 @@ function initAudio(){
     master = AC.createGain();
     master.gain.value = muted ? 0 : 1;
     master.connect(AC.destination);
-  } catch(err){ /* 音频不可用则静默 */ }
+  } catch(err){ /* 音频不可用则静默 */ return; }
+  if (typeof onAudioReady === 'function') onAudioReady();   // 能出声了：把上次开着的环境声接着放（sounddesk.js）
 }
 
 /* 静音：所有声音一起淡出 / 淡入 */

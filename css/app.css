@@ -361,7 +361,50 @@ body.immersive #immersive{ display: block; }
 .dlg-paper{ overflow: hidden; background: color-mix(in srgb, var(--wash) 60%, #f8f3e9);
   box-shadow: inset 2px 0 0 rgba(62,48,38,.22), inset -2px 0 0 rgba(62,48,38,.22); }
 .dlg-inner{ margin: 12px 14px; padding: 14px 16px 12px; background: #fbf7ef; box-shadow: 0 0 0 2px rgba(62,48,38,.14); }
+.dlg.wide{ width: min(420px, 100%); }
+.dlg-head{ display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .dlg-title{ margin: 0 0 8px; font-family: var(--hand); font-weight: normal; font-size: 18px; letter-spacing: 2px; }
+.dlg-x{ margin: -6px -6px 2px 0; padding: 0 6px; border: 0; background: none; cursor: pointer; color: var(--ink-2); font-size: 18px; line-height: 24px; }
+.dlg-x:hover{ color: var(--ink); background: rgba(62,48,38,.06); }
+
+/* 留声机：一行一种声音 —— 勾选、像素小图标、名字（下面一行小字）、音量滑块 */
+.snd-rows{ display: flex; flex-direction: column; margin: 8px 0 4px; }
+.snd-row{ display: flex; align-items: center; gap: 8px; padding: 6px 0; border-top: 2px dashed var(--line); }
+.snd-icon svg{ display: block; width: 18px; height: 18px; }
+.snd-rain svg{ fill: #5d82ad; } .snd-wind svg{ fill: #8d939c; } .snd-nature svg{ fill: #6f9a5a; } .snd-fire svg{ fill: #e0703a; } .snd-train svg{ fill: #7a6a82; }
+.snd-row:not(.on) .snd-icon{ opacity: .5; }
+.snd-name{ flex: 1; min-width: 0; display: flex; flex-direction: column; font-size: 12px; line-height: 1.4; }
+.snd-name small{ font-size: 12px; color: var(--ink-2); }
+.snd-vol{ -webkit-appearance: none; appearance: none; width: 104px; height: 18px; margin: 0; background: transparent; cursor: pointer; }
+.snd-vol::-webkit-slider-runnable-track{ height: 4px; background: var(--ink-3); box-shadow: 0 2px 0 rgba(255,255,255,.6); }
+.snd-vol::-webkit-slider-thumb{ -webkit-appearance: none; width: 10px; height: 16px; margin-top: -6px; background: #fbf7ef; box-shadow: var(--pxb); }
+.snd-vol::-moz-range-track{ height: 4px; background: var(--ink-3); }
+.snd-vol::-moz-range-thumb{ width: 10px; height: 16px; border: 2px solid var(--ink); border-radius: 0; background: #fbf7ef; }
+.snd-row.on .snd-vol::-webkit-slider-runnable-track{ background: color-mix(in srgb, var(--wash-dk) 70%, var(--ink)); }
+.snd-foot{ display: flex; align-items: center; gap: 8px; flex-wrap: wrap; min-height: 26px; padding-top: 8px; border-top: 2px dashed var(--line); font-size: 12px; }
+.snd-foot > span{ flex: 1; }
+
+/* 月历：一周一行（周一在最左）；今天描深边，选中的那天铺一层主题色；节气写在日子下面；小点 = 有没做完的任务，小方块 = 写了日记 */
+.cal-nav{ display: flex; align-items: center; gap: 4px; margin-bottom: 6px; }
+.cal-month{ font-family: var(--hand); font-size: 18px; margin: 0 4px; }
+.cal-nav .btn{ margin-left: auto; }
+.cal-week, .cal-grid{ display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
+.cal-week span{ text-align: center; font-size: 12px; color: var(--ink-2); padding-bottom: 2px; }
+.cal-day{ position: relative; display: flex; flex-direction: column; align-items: flex-start; min-height: 44px; padding: 2px 4px; border: 2px solid var(--line); background: transparent; cursor: pointer; text-align: left; }
+.cal-day:hover{ border-color: var(--ink-3); }
+.cal-day.today{ border-color: var(--ink); }
+.cal-day.sel{ background: color-mix(in srgb, var(--wash) 45%, transparent); }
+.cal-n{ font-size: 12px; line-height: 16px; }
+.cal-term{ font-size: 12px; line-height: 14px; color: var(--ok); }
+.cal-marks{ position: absolute; right: 3px; bottom: 3px; display: flex; gap: 2px; }
+.cal-dot{ width: 4px; height: 4px; background: var(--warn); }
+.cal-diary{ width: 6px; height: 4px; background: var(--wash-dk); box-shadow: 0 0 0 1px var(--ink-3); }
+.cal-detail{ margin-top: 10px; padding-top: 8px; border-top: 2px dashed var(--line); font-size: 12px; display: flex; flex-direction: column; gap: 6px; }
+.cal-date{ display: flex; justify-content: space-between; gap: 8px; font-size: 12px; }
+.cal-tterm{ color: var(--ok); }
+.cal-tasks{ margin: 0; padding-left: 16px; }
+.cal-tasks li.done{ color: var(--ink-2); text-decoration: line-through; }
+.cal-diary-line{ color: var(--ink-2); word-break: break-word; }
 .dlg-text{ margin: 4px 0 2px; font-size: 12px; line-height: 1.7; white-space: pre-line; }
 .dlg-input{ display: block; width: 100%; box-sizing: border-box; margin: 6px 0 2px; font-size: 12px; }
 .dlg-btns{ display: flex; align-items: center; gap: 8px; margin-top: 16px; }

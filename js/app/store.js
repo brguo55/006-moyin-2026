@@ -66,6 +66,7 @@ function freshData(){
                 cycles: 4, timerSec: 600,   // 番茄钟一轮几个循环（0 = 不限）；计时器时长（秒）
                 mustN: 3,                   // 任务页最上面「今天至少完成」几件（2–4）
                 napMin: 3,                  // 多少分钟没人理 rabbit，他就打瞌睡（0 = 平时不睡）
+                sounds: {},                 // 留声机：{ rain: { on, vol }, wind, nature, fire, train }
                 hidden: [] },   // hidden：设置里取消勾选、不在面板里显示的功能（页签 id）
     meta: { createdAt: now, updatedAt: now },
   };

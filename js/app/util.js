@@ -74,7 +74,7 @@ function toast(msg){
 const pixSvg = rows => `<svg viewBox="0 0 ${rows[0].length} ${rows.length}" shape-rendering="crispEdges">` +
   rows.flatMap((r, y) => [...r].map((c, x) => c === 'k' ? `<rect x="${x}" y="${y}" width="1" height="1"/>` : '')).join('') + '</svg>';
 
-/* ---------- 像素卷轴对话框：代替浏览器自带的 prompt / confirm ----------
+/* ---------- 像素卷轴：代替浏览器自带的 prompt / confirm，也给声音台、月历用 ----------
    ask({ title, text, input, value, placeholder, ok, danger }) → Promise
    input = true：要填字，返回填好的字（去掉首尾空格；取消 = null）；否则返回 true / false
    打开时卷轴从上往下展开，兔耳小鸟飞过来停在上面扑腾；Esc / 点外面 = 取消 */
@@ -91,54 +91,66 @@ function dlgBird(){
   }
   return h('span.dlg-bird', { 'aria-hidden': 'true', style: { '--bw': birdStrip.w + 'px', '--bh': birdStrip.h + 'px', backgroundImage: `url(${birdStrip.url})` } });
 }
+/* 卷轴卡片（声音台、月历这种会一直开着调东西的也用它）：
+   scrollCard({ title, body, wide, closable, focus, onClose }) → { close, paper }
+   body 是纸上的内容；closable = 右上角一个 ×；Esc / 点外面也会关（关之前调 onClose）；
+   卷轴开着的时候，按键不去操控 rabbit；Tab 只在卷轴里转 */
+function scrollCard({ title, body, wide = false, closable = true, focus = null, onClose = null }){
+  const prev = document.activeElement;
+  const x = closable ? h('button.dlg-x', { title: '关上', 'aria-label': '关上' }, '×') : null;
+  const paper = h('div.dlg-paper', null, h('div.dlg-inner', null,
+    h('div.dlg-head', null, h('h3.dlg-title', { id: 'dlg-title' }, title), x), ...[].concat(body)));
+  const box = h('div.dlg' + (wide ? '.wide' : ''), { role: 'dialog', 'aria-modal': 'true', 'aria-labelledby': 'dlg-title' },
+    dlgBird(), h('div.dlg-rod'), paper, h('div.dlg-rod'));
+  const back = h('div.dlg-back', null, box);
+  let closed = false;
+  const close = () => {
+    if (closed) return;
+    closed = true;
+    if (onClose) onClose();
+    paper.style.setProperty('--h', paper.offsetHeight + 'px');   // 卷回去：从现在的高度收到 0
+    box.classList.remove('opening'); box.classList.add('closing'); back.classList.add('closing');
+    setTimeout(() => back.remove(), 260);
+    if (prev && prev.isConnected) prev.focus({ preventScroll: true });
+  };
+  if (x) x.onclick = close;
+  back.addEventListener('pointerdown', e => { if (e.target === back) close(); });
+  back.addEventListener('keydown', e => {
+    e.stopPropagation();   // 卷轴开着时，按键不去操控 rabbit
+    if (e.isComposing) return;
+    if (e.key === 'Escape'){ e.preventDefault(); close(); }
+    else if (e.key === 'Tab'){   // Tab 只在卷轴里转
+      const fs = [...paper.querySelectorAll('button:not([disabled]), input, select, textarea')], i = fs.indexOf(document.activeElement);
+      if (!fs.length) return;
+      e.preventDefault();
+      fs[(i + (e.shiftKey ? fs.length - 1 : 1) + fs.length) % fs.length].focus();
+    }
+  });
+  back.addEventListener('keyup', e => e.stopPropagation());
+  document.body.append(back);
+  paper.style.setProperty('--h', paper.scrollHeight + 'px');   // 展开到内容的高度
+  box.classList.add('opening');
+  paper.addEventListener('animationend', () => box.classList.remove('opening'), { once: true });
+  const first = focus || x || paper.querySelector('button, input');
+  if (first) first.focus({ preventScroll: true });
+  return { close, paper };
+}
 function ask({ title, text = '', input = false, value = '', placeholder = '', max = 60, ok = '确定', danger = false }){
   return new Promise(done => {
-    const prev = document.activeElement;
     const field = input ? h('input.dlg-input', { value, placeholder, maxLength: max }) : null;
     const no = h('button.btn.ghost', null, '取消');
     const yes = h('button.btn.primary' + (danger ? '.danger' : ''), null, ok);
     const seal = h('span.dlg-seal', { 'aria-hidden': 'true' });
     seal.innerHTML = SEAL_SVG;
-    const paper = h('div.dlg-paper', null, h('div.dlg-inner', null,
-      h('h3.dlg-title', { id: 'dlg-title' }, title),
-      text ? h('p.dlg-text', null, text) : null,
-      field,
-      h('div.dlg-btns', null, seal, no, yes)));
-    const box = h('div.dlg', { role: 'dialog', 'aria-modal': 'true', 'aria-labelledby': 'dlg-title' },
-      dlgBird(), h('div.dlg-rod'), paper, h('div.dlg-rod'));
-    const back = h('div.dlg-back', null, box);
-    let closed = false;
-    const close = result => {
-      if (closed) return;
-      closed = true;
-      done(result);
-      paper.style.setProperty('--h', paper.offsetHeight + 'px');   // 卷回去：从现在的高度收到 0
-      box.classList.remove('opening'); box.classList.add('closing'); back.classList.add('closing');
-      setTimeout(() => back.remove(), 260);
-      if (prev && prev.isConnected) prev.focus({ preventScroll: true });
-    };
-    const accept = () => close(input ? field.value.trim() : true);
-    const cancel = () => close(input ? null : false);
-    yes.onclick = accept; no.onclick = cancel;
-    back.addEventListener('pointerdown', e => { if (e.target === back) cancel(); });
-    back.addEventListener('keydown', e => {
-      e.stopPropagation();   // 对话框开着时，按键不去操控 rabbit
-      if (e.isComposing) return;
-      if (e.key === 'Escape'){ e.preventDefault(); cancel(); }
-      else if (e.key === 'Enter' && e.target === field){ e.preventDefault(); accept(); }
-      else if (e.key === 'Tab'){   // Tab 只在对话框里转
-        const fs = [field, no, yes].filter(Boolean), i = fs.indexOf(document.activeElement);
-        e.preventDefault();
-        fs[(i + (e.shiftKey ? fs.length - 1 : 1) + fs.length) % fs.length].focus();
-      }
-    });
-    back.addEventListener('keyup', e => e.stopPropagation());
-    document.body.append(back);
-    paper.style.setProperty('--h', paper.scrollHeight + 'px');   // 展开到内容的高度
-    box.classList.add('opening');
-    paper.addEventListener('animationend', () => box.classList.remove('opening'), { once: true });
-    (field || (danger ? no : yes)).focus({ preventScroll: true });   // 删除之类的：默认停在「取消」上
-    if (field) field.select();
+    let result = input ? null : false;   // Esc / 点外面 / 取消
+    const card = scrollCard({ title, closable: false, focus: field || (danger ? no : yes), onClose: () => done(result),   // 删除之类的：默认停在「取消」上
+      body: [text ? h('p.dlg-text', null, text) : null, field, h('div.dlg-btns', null, seal, no, yes)] });
+    yes.onclick = () => { result = input ? field.value.trim() : true; card.close(); };
+    no.onclick = () => card.close();
+    if (field){
+      field.select();
+      field.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.isComposing){ e.preventDefault(); yes.onclick(); } });
+    }
   });
 }
 

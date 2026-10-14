@@ -4,7 +4,7 @@
    ------------------------------------------------------------
    rabbit 坐在一把悬浮的金椅子上（像诸葛亮的四轮车，但是飘着），椅子带着他飘来飘去：
    A / D 左右飘；空格跳（按得越久跳得越高），空中再按一次 = 二段跳；站在家具上按 S 下来；
-   E 互动（目前只有门口的控制面板：打开设置）；W 先空着（以后进门 / 上楼梯）
+   E 互动（旁边是什么就用什么：门口的控制面板 → 设置，日历 → 月历，留声机 → 声音）；W 先空着（以后进门 / 上楼梯）
    打瞌睡的时候这些键都不管用，要点他一下才醒
    动画（sprites.js 的 RABBIT）：平时 idle_rabbit；番茄钟专注时 focus_rabbit_one（喝茶）
    rabbit 左右两边长得不一样（一边衣服、一边机械），不能镜像，所以暂时一直朝右
@@ -16,7 +16,7 @@
    ------------------------------------------------------------
    地图（世界坐标）3600 × 1000，约 4 屏宽、2 屏高；地板 y = 940，阁楼地板 y = 560
    像素坐标就是世界坐标 ÷ 2：1800 × 500，镜头 448 × 252
-   一楼从左到右：门厅 → 书房（两个高博古架，挑高到屋顶）→ 茶室（月洞窗、番茄钟挂轴、茶桌）→ 工作间（书案、全息屏）→ 格子窗
+   一楼从左到右：门厅（左上有扇面窗、留声机和两块置物板，门边挂着日历）→ 书房（两个高博古架，挑高到屋顶）→ 茶室（月洞窗、番茄钟挂轴、茶桌）→ 工作间（书案、全息屏）→ 格子窗
    二楼阁楼（x 2100–3560）：床、圆窗、樟木箱；从茶室旁边的一排置物板跳上去
    ============================================================ */
 
@@ -38,6 +38,8 @@ const PLATS = [];
 const plat = (name, x0, x1, y) => { const p = { name, x0, x1, y }; PLATS.push(p); return p; };
 plat('阁楼', MEZZ_X0, WALL_R, MEZZ_Y);
 plat('鞋凳', 330, 430, 912);
+plat('置物板', 452, 536, 836);   // 门厅：鞋凳上面那块（摆着节气小物）
+plat('置物板', 392, 508, 748);   // 门厅：留声机那块
 plat('书架', 636, 764, 700);
 plat('书架', 976, 1104, 650);
 plat('小凳', 860, 910, 900);
@@ -72,7 +74,7 @@ const Room = {
   bunny: { x: 1800, y: 860, facing: 1, jump: -1 },
   hearts: [], puffs: [],
   act: null,                        // 正在播的一次性动作：{ kind: 'takeoff' | 'boost' | 'land', t }
-  hover: null, nearPanel: false,    // 鼠标指着什么；rabbit 是不是在门口的控制面板旁边
+  hover: null, near: null,          // 鼠标指着什么；rabbit 身边能按 E 用的东西（'panel' | 'calendar' | 'phono'）
   s: 1, k: 2, kd: 2, ox: 0, oy: 0,
 
   /* ---------- 布局：镜头画面居中在舞台可用区域；面板开着时最大 1 倍，收起面板（场景放大）时铺满窗口；
@@ -113,8 +115,15 @@ const Room = {
   /* 操控了 / 点醒了 rabbit：记下时间、醒过来；长休息开头的那个盹也不用打了 */
   _touched(){ this.lastInput = Date.now(); this.napT = -1; this.breakNap = false; },
   /* E：互动 —— 看 rabbit 面前是什么。现在只有门口的控制面板：打开设置 */
-  interact(){ if (this.nearPanel) this._openSettings(); },
-  _openSettings(){ beep(); if (typeof openSettings === 'function') openSettings(); },
+  interact(){ if (this.near) this._use(this.near); },
+  /* 用一样东西：控制面板 → 设置（滴一声），日历 → 月历，留声机 → 声音（面板那边的函数） */
+  _use(kind){
+    if (kind === 'panel') beep();
+    const fn = { panel: 'openSettings', calendar: 'openCalendar', phono: 'openSoundDesk' }[kind];
+    if (typeof window[fn] === 'function') window[fn]();
+  },
+  /* 屋里能互动的东西（像素坐标的框，在 house.js 里定的） */
+  _things(){ return [['panel', CTRL], ['calendar', CAL], ['phono', PHONO]]; },
   /* S：从平台上跳下来（地板上按没反应） */
   dropDown(){
     if (!this.grounded || !this.ground) return;
@@ -123,16 +132,16 @@ const Room = {
   },
 
   hit(px, py){
-    const [x, y] = this.toWorld(px, py);
-    const b = this.bunny, [cx, cy, cw, ch] = CTRL;
-    if (x > cx * PX - 4 && x < (cx + cw) * PX + 4 && y > cy * PX - 4 && y < (cy + ch) * PX + 4) return 'panel';
+    const [x, y] = this.toWorld(px, py), b = this.bunny;
+    for (const [kind, [cx, cy, cw, ch]] of this._things())
+      if (x > cx * PX - 4 && x < (cx + cw) * PX + 4 && y > cy * PX - 4 && y < (cy + ch) * PX + 4) return kind;
     if (Math.hypot(x - b.x, y - b.y) < 18) return 'bunny';
     if (Math.abs(x - this.x) < 40 && y < this.y + 4 && y > this.y - KH) return 'rabbit';
     return null;
   },
   click(px, py){
     const who = this.hit(px, py);
-    if (who === 'panel') this._openSettings();
+    if (who === 'panel' || who === 'calendar' || who === 'phono') this._use(who);
     else if (who === 'rabbit'){
       // 被点一下：做个动作（click）+ 冒红色爱心；睡着时被点就是醒过来，这一下播完才能动
       const napping = this.napT >= 0;
@@ -192,8 +201,16 @@ const Room = {
     const dir = this.dozing() ? 0 : (this.keys.has('KeyD') ? 1 : 0) - (this.keys.has('KeyA') ? 1 : 0);   // 睡着时不听方向键
     this.jumpBuf = Math.max(0, this.jumpBuf - dt);
     this._physics(dt, dir);
-    const [cx, , cw] = CTRL;
-    this.nearPanel = this.grounded && this.y > FLOOR_Y - 60 && Math.abs(this.x - (cx + cw / 2) * PX) < 60;
+    // 身边能按 E 的东西：控制面板、日历在地上 / 鞋凳上够得着；留声机要站到它那块置物板上；挑最近的那个
+    this.near = null;
+    if (this.grounded){
+      let best = 60;
+      for (const [kind, [cx, , cw]] of this._things()){
+        const reach = kind === 'phono' ? Math.abs(this.y - SHELF_B[2] * PX) < 30 : this.y > FLOOR_Y - 60;
+        const d = Math.abs(this.x - (cx + cw / 2) * PX);
+        if (reach && d < best){ best = d; this.near = kind; }
+      }
+    }
     // 椅子是飘着的，走起来不扬灰
     const walking = this.grounded && Math.abs(this.vx) > 20;
     this.walking = walking;
@@ -355,6 +372,31 @@ const Room = {
     ctx.translate(this.ox, this.oy);
     ctx.scale(k, k);
     drawForeground(ctx, t, camX, camY, q);
+    // 5) 天光：夜里暗一点、灯笼亮起来（人物、前景都在里面）
+    drawLights(ctx, t, camX, camY, q, VW, VH);
+    ctx.restore();
+    // 6) 指着能点的东西：上面冒一张小纸条说明
+    this._drawTip(camX, camY);
+  },
+  /* 鼠标指着控制面板 / 日历 / 留声机时的小纸条（屏幕坐标，用面板的像素字体） */
+  _drawTip(camX, camY){
+    const kind = this.hover, box = kind && (this._things().find(x => x[0] === kind) || [])[1];
+    if (!box) return;
+    const now = new Date(), term = currentTerm();
+    const text = kind === 'panel' ? '设置'
+      : kind === 'calendar' ? `${now.getMonth() + 1}月${now.getDate()}日 · 周${'日一二三四五六'[now.getDay()]} · ${term.day === ymdOf(now) ? '今天' : ''}${term.name}`
+      : typeof Ambience !== 'undefined' && Ambience.playing() ? '留声机 · 在放：' + Ambience.playingNames().join('、') : '留声机 · 点开放雨声、风声……';
+    const [bx, by, bw] = box, k = this.k;
+    ctx.save();
+    ctx.font = '12px "Fusion Pixel 12px Proportional SC", "PingFang SC", sans-serif';
+    ctx.textBaseline = 'middle';
+    const w = Math.ceil(ctx.measureText(text).width) + 16, h = 22;
+    const VW = VIEW_W / PX * k, x = Math.round(clamp(this.ox + (bx + bw / 2 - camX) * k - w / 2, this.ox + 4, this.ox + VW - w - 4));
+    const y = Math.round(Math.max(this.oy + 4, this.oy + (by - camY) * k - h - 8));
+    ctx.fillStyle = 'rgba(62,48,38,0.18)'; ctx.fillRect(x + 3, y + 3, w, h);
+    ctx.fillStyle = '#3e3026'; ctx.fillRect(x, y, w, h);
+    ctx.fillStyle = '#f8f3e9'; ctx.fillRect(x + 2, y + 2, w - 4, h - 4);
+    ctx.fillStyle = '#3e3026'; ctx.fillText(text, x + 8, y + h / 2 + 1);
     ctx.restore();
   },
   /* 现在画哪一帧：{ anim, i（第几帧）, dy（往下挪几像素，抵消画里自带的升高）}

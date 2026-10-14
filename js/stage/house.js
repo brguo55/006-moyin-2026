@@ -5,11 +5,12 @@
    rabbit 住在一颗人造小行星上：屋子是温暖的中式木构（红漆柱、回纹、灯笼、博古架、挂轴），
    窗外是穹顶里的庭院（白墙黛瓦、竹子，下着人工雨），再往外是星海（行星、漂浮小岛上的楼阁、镖船）
    分层（从远到近）：
-     窗外远景（星海 + 庭院，跟着镜头只移动一半）+ 雨丝
-     房子（静态：墙、地板、家具 —— 预先画好一整张；窗户是透明的，透出后面的远景）
-     会动的小东西（挂轴上的番茄钟、屏幕里的雨、挂钟、灯笼的光、茶的热气）
+     窗外远景（星海 + 庭院，跟着镜头只移动一半；白天 / 傍晚 / 夜里三张，按真实时间一格一格溶过去）+ 雨丝
+     房子（静态：墙、地板、家具 —— 预先画好一整张；窗户是透明的，透出后面的远景；换节气时重画瓶花和小摆设）
+     会动的小东西（挂轴上的番茄钟、日历、留声机、屏幕里的雨、挂钟、茶的热气）
      人物（room.js 画）
      前景（红漆柱、垂下来的藤、大瓷瓶：比中景移动得快 → 景深）
+     天光（夜里整个画面暗一点、灯笼亮起来；傍晚带点橘色）—— drawLights，最后叠上去
    坐标：这里全部是「像素」坐标；平台的 y（世界单位）÷ 2 就是那块板子的顶面那一行
    ============================================================ */
 
@@ -50,12 +51,12 @@ function themeCols(){
 /* ============================================================
    静态部分：整张地图画一次（换主题时重画）
    ============================================================ */
-let houseCv = null, houseOld = null, houseTheme = -1;
+let houseCv = null, houseOld = null, houseTheme = -1, houseTerm = -1;
 function buildHouse(){
   if (houseCv && houseTheme !== themeIdx){ houseOld = houseCv; houseCv = null; }
   houseCv = houseCv || pxCanvas(AW, AH);
   paintHouse(houseCv.getContext('2d'));
-  houseTheme = themeIdx;
+  houseTheme = themeIdx; houseTerm = currentTerm().i;
 }
 function paintHouse(g){
   PG = g;
@@ -127,7 +128,9 @@ function bricks(x, y, w, h){
   }
 }
 /* 窗户透明区域的外接框（x, y, 宽, 高）：镜头里一个都没有时就不画远景 */
-const WINDOWS = [[762, 318, 97, 97], [1525, 340, 100, 90], [1324, 164, 53, 53]];
+const FAN = [220, 332, 50, 16];                 // 门厅上方的扇面窗：圆心 x、y，外半径、内半径（开口朝上，左右各张开 60°）
+const LOFT_WIN = [1464, 162, 76, 64];           // 阁楼新开的格子窗（x, y, 宽, 高）
+const WINDOWS = [[762, 318, 97, 97], [1525, 340, 100, 90], [1324, 164, 53, 53], [168, 280, 104, 46], LOFT_WIN];
 function clearDisc(cx, cy, r){
   for (let dy = -r; dy <= r; dy++){ const dx = Math.round(Math.sqrt(r * r - dy * dy)); PG.clearRect(cx - dx, cy + dy, dx * 2 + 1, 1); }
 }
@@ -163,6 +166,29 @@ function latticeWindow(x, y, w, h){
   glints(x + 14, y + 30, 14); glints(x + 20, y + 32, 6);
   bevel(x - 6, y + h, w + 12, 5, HC.wl, HC.wh, HC.wd);
   rect(x - 3, y + h + 5, w + 6, 2, OUTL); rect(x - 2, y + h + 5, w + 4, 1, HC.wd);
+}
+/* 扇面窗：一块扇形的透明玻璃；木框按「离玻璃几格」一圈一圈画：描边 → 金线 → 三层木头 → 描边 */
+function fanWindow(cx, cy, ro, ri){
+  const x0 = cx - ro - 8, y0 = cy - ro - 8, w = ro * 2 + 17, hh = ro + 8;
+  const inGlass = (x, y) => {
+    const dx = x - cx, dy = y - cy, r = Math.hypot(dx, dy), a = Math.atan2(dy, dx) * 180 / Math.PI;
+    return r >= ri && r <= ro && a >= -150 && a <= -30;
+  };
+  const D = new Uint8Array(w * hh).fill(255), at = (x, y) => (y - y0) * w + (x - x0);
+  for (let y = y0; y < y0 + hh; y++) for (let x = x0; x < x0 + w; x++) if (inGlass(x, y)) D[at(x, y)] = 0;
+  for (let k = 1; k <= 6; k++) for (let y = y0; y < y0 + hh; y++) for (let x = x0; x < x0 + w; x++){
+    if (D[at(x, y)] !== 255) continue;
+    for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++){
+      const xx = x + dx, yy = y + dy;
+      if (xx >= x0 && xx < x0 + w && yy >= y0 && yy < y0 + hh && D[at(xx, yy)] === k - 1) D[at(x, y)] = k;
+    }
+  }
+  const COL = [null, OUTL, HC.gold, HC.wl, HC.wm, HC.wd, OUTL];
+  for (let y = y0; y < y0 + hh; y++) for (let x = x0; x < x0 + w; x++){
+    const d = D[at(x, y)];
+    if (d === 0) PG.clearRect(x, y, 1, 1); else if (d <= 6) dot(x, y, COL[d]);
+  }
+  glints(cx - 26, cy - 22, 10); glints(cx - 20, cy - 20, 5);
 }
 function roundWindow(cx, cy, r){
   disc(cx, cy, r + 5, OUTL); disc(cx, cy, r + 4, HC.wm);
@@ -270,6 +296,10 @@ function scroll(x, y, w, h){
 
 /* 门口墙上的控制面板（像空调遥控器）：点它、或者飘到旁边按 E → 打开设置 */
 const CTRL = [150, 408, 15, 20];   // x, y, 宽, 高（像素）
+/* 门厅左上：两块置物板（能站，room.js 里的平台）、留声机（点它或者站到它旁边按 E → 声音）、门边的日历（点它 → 月历） */
+const SHELF_A = [226, 268, 418], SHELF_B = [196, 254, 374];   // x0、x1、顶面 y
+const PHONO = [218, 332, 36, 42];                             // 留声机的外接框
+const CAL = [170, 389, 24, 28];                               // 日历
 /* ---------- 门厅：格扇门、对联、油纸伞、衣帽架（斗笠 + 粉斗篷）、鞋凳、控制面板 ---------- */
 function drawEntrance(){
   bevel(46, 391, 53, 79, HC.lac, HC.lacL, HC.lacD);
@@ -299,12 +329,123 @@ function drawEntrance(){
   bevel(165, 456, 51, 4, HC.wl, HC.wh, HC.wd);
   for (const x of [168, 209]) boxO(x, 460, 4, 10, HC.wd);
   art(BOOT, BOOT_PAL, 176, 465); art(BOOT, BOOT_PAL, 188, 465);
+  // 扇面窗、两块置物板（下面那块摆着跟着节气换的小东西）、留声机、日历
+  fanWindow(...FAN);
+  wallShelf(SHELF_A[0], SHELF_A[1], SHELF_A[2]);
+  seasonItem(SHELF_A[1] - 14, SHELF_A[2], termSeason(currentTerm().i));
+  wallShelf(SHELF_B[0], SHELF_B[1], SHELF_B[2]);
+  gramophone();
+  wallCalendar();
   // 控制面板：铜框、玉色小屏幕（内容每帧画）、两个小按钮
   const [cx, cy, cw, ch] = CTRL;
   rect(cx + 1, cy + ch, cw, 1, 'rgba(60,40,30,0.25)');                     // 一点点投影
   bevel(cx, cy, cw, ch, HC.goldDk, HC.gold, '#7a5222');
   rect(cx + 2, cy + 2, cw - 4, 9, OUTL); rect(cx + 3, cy + 3, cw - 6, 7, HC.jadeDk);
   for (const bx of [cx + 3, cx + 8]) { rect(bx, cy + 13, 4, 3, OUTL); rect(bx + 1, cy + 14, 2, 1, HC.wl); }
+}
+
+/* 留声机：木柜、转盘上的唱片、右边的摇柄；铜喇叭从柜子后面往左上弯出去，越来越粗，最后张开 */
+const HORN = s => [244 - 15 * s, 358 - 9 * s - 6 * s * s, 1 + 7.5 * s * s];   // 喇叭的中心线：x, y, 半径（s 从颈子 0 到喇叭口 1）
+function gramophone(){
+  bevel(226, 362, 23, 12, HC.wm, HC.wl, HC.wd);
+  rect(228, 366, 19, 1, HC.gold);
+  rect(233, 368, 9, 3, OUTL); rect(234, 369, 7, 1, HC.goldDk);
+  rect(249, 367, 2, 1, OUTL); rect(250, 364, 1, 4, OUTL); rect(251, 364, 2, 1, OUTL); dot(252, 363, HC.gold);
+  rect(227, 361, 18, 1, HC.goldDk);
+  rect(228, 359, 15, 2, '#1d1416'); dot(235, 359, HC.red);
+  for (const pass of [0, 1]) for (let s = 0; s <= 1.001; s += 0.04){
+    const [x, y, r] = HORN(s);
+    disc(Math.round(x), Math.round(y), Math.round(r) + (pass ? 0 : 1), pass ? HC.gold : OUTL);
+  }
+  for (let s = 0.15; s <= 1.001; s += 0.04){ const [x, y, r] = HORN(s); dot(Math.round(x + r * 0.3), Math.round(y - r * 0.8), HC.goldLt); }
+  for (let s = 0.3; s <= 1.001; s += 0.05){ const [x, y, r] = HORN(s); dot(Math.round(x - r * 0.2), Math.round(y + r * 0.85), HC.goldDk); }
+  const [mx, my, mr] = HORN(1);
+  disc(Math.round(mx) - 1, Math.round(my) - 1, Math.round(mr) - 2, '#3a2216');
+  disc(Math.round(mx) - 2, Math.round(my) - 2, Math.round(mr) - 5, '#24140d');
+}
+/* 撕页日历：钉子 + 挂绳、红色的月份条、白纸、下面一叠纸边（月、日、星期每帧画） */
+function wallCalendar(){
+  const [x, y, w, h] = CAL, nx = x + (w >> 1), ny = y - 5;
+  for (let i = 0; i <= 5; i++){ dot(nx - Math.round(i * 2.2), ny + i, HC.wdk); dot(nx + Math.round(i * 2.2), ny + i, HC.wdk); }
+  rect(nx - 1, ny - 1, 3, 2, OUTL); dot(nx, ny - 1, HC.gold);
+  boxO(x, y, w, h, HC.white);
+  rect(x + 1, y + 1, w - 2, 7, HC.red); rect(x + 1, y + 1, w - 2, 1, HC.redLt); rect(x + 1, y + 8, w - 2, 1, HC.lacD);
+  rect(x + 1, y + h - 3, w - 2, 1, HC.paperDk);
+  rect(x + 2, y + h, w - 4, 1, OUTL); rect(x + 3, y + h + 1, w - 6, 1, 'rgba(60,40,30,0.25)');
+}
+
+/* ---------- 跟着节气换的小装饰：茶室的瓶花（九种）、门厅置物板上的季节小物（四种） ---------- */
+/* 一根折线枝条：pts 是 [x, y] 点列 */
+function twig(pts, c){
+  for (let i = 0; i + 1 < pts.length; i++){
+    const [a, b] = pts[i], [c2, d] = pts[i + 1], n = Math.max(Math.abs(c2 - a), Math.abs(d - b));
+    for (let k = 0; k <= n; k++) dot(a + Math.round((c2 - a) * k / n), b + Math.round((d - b) * k / n), c);
+  }
+}
+const bloom = (x, y, c, lt, dk) => { dot(x, y, c); dot(x + 1, y, lt || c); dot(x, y + 1, dk || c); dot(x + 1, y + 1, c); };
+function seasonVase(cx, top){
+  const i = currentTerm().i, y = top;
+  if (i === 23 || i <= 1){                                   // 冬至 – 大寒：梅花
+    for (let k = 0; k < 22; k++) dot(cx + Math.round(Math.sin(k * 0.3) * 3) - (k > 12 ? k - 12 : 0), y - k, HC.wdk);
+    for (const [px, py] of [[-3, -16], [-8, -20], [3, -10], [-12, -22], [-1, -21]]) bloom(cx + px, y + py, HC.pink, HC.pinkLt, HC.pinkDk);
+  } else if (i <= 3){                                        // 立春、雨水：迎春花（弯下来的绿枝，小黄花）
+    for (const dir of [-1, 1]) for (let k = 0; k < 18; k++){
+      const px = cx + dir * Math.round(k * 0.7), py = y - Math.round(Math.sin(k / 17 * Math.PI) * 14) - (k < 3 ? k : 0);
+      dot(px, py, HC.leafDk); if (k % 4 === 2) bloom(px, py - 1, HC.gold, HC.goldLt, HC.goldDk);
+    }
+  } else if (i <= 5){                                        // 惊蛰、春分：桃花
+    twig([[cx, y], [cx - 2, y - 10], [cx - 6, y - 20]], HC.wdk); twig([[cx - 2, y - 10], [cx + 5, y - 18]], HC.wdk);
+    for (const [px, py] of [[-6, -21], [-4, -15], [4, -19], [1, -13], [-8, -17], [6, -15]]) bloom(cx + px, y + py, HC.pinkLt, '#fde3e6', HC.pink);
+    dot(cx - 3, y - 18, HC.leafLt); dot(cx + 3, y - 15, HC.leafLt);
+  } else if (i <= 7){                                        // 清明、谷雨：柳枝（垂下来的细条）
+    twig([[cx, y], [cx - 1, y - 18], [cx - 5, y - 22]], HC.wdk);
+    for (const sx of [-5, -3, 0, 2]) for (let k = 0; k < 14; k++) dot(cx + sx + Math.round(Math.sin(k * 0.4) * 1.2) - (k > 8 ? 1 : 0), y - 21 + k, k % 3 ? HC.leafLt : HC.leaf);
+  } else if (i <= 9){                                        // 立夏、小满：栀子花（深绿叶子，白花）
+    twig([[cx, y], [cx - 1, y - 16]], HC.leafDk); twig([[cx, y - 8], [cx + 5, y - 14]], HC.leafDk);
+    for (const [px, py] of [[-3, -12], [3, -10], [-4, -6], [6, -16]]){ dot(cx + px, y + py, HC.leaf); dot(cx + px + 1, y + py, HC.leafDk); }
+    for (const [px, py] of [[-2, -18], [4, -16]]){ rect(cx + px, y + py, 3, 3, HC.white); dot(cx + px + 1, y + py + 1, HC.goldLt); }
+  } else if (i <= 13){                                       // 芒种 – 大暑：荷花和一片圆荷叶
+    twig([[cx, y], [cx - 1, y - 24]], HC.leafDk); twig([[cx + 1, y], [cx + 6, y - 14]], HC.leafDk);
+    rect(cx - 3, y - 29, 5, 5, HC.pink); rect(cx - 2, y - 30, 3, 1, HC.pinkLt); dot(cx - 1, y - 27, HC.pinkLt); dot(cx - 3, y - 25, HC.pinkDk); dot(cx + 1, y - 25, HC.pinkDk);
+    rect(cx + 2, y - 17, 9, 3, HC.leaf); rect(cx + 3, y - 18, 7, 1, HC.leafLt); dot(cx + 6, y - 16, HC.leafDk);
+  } else if (i <= 17){                                       // 立秋 – 秋分：桂花（深绿叶子，一簇簇小黄花）
+    twig([[cx, y], [cx - 2, y - 14], [cx - 7, y - 20]], HC.wdk); twig([[cx - 2, y - 14], [cx + 5, y - 20]], HC.wdk);
+    for (const [px, py] of [[-7, -21], [-4, -16], [4, -21], [1, -18], [-1, -12], [6, -17]]){ dot(cx + px, y + py, HC.leafDk); dot(cx + px + 1, y + py, HC.leaf); }
+    for (const [px, py] of [[-6, -19], [-3, -14], [3, -19], [5, -16], [0, -16]]){ dot(cx + px, y + py, '#f2b544'); dot(cx + px + 1, y + py + 1, '#ffd36b'); }
+  } else if (i <= 19){                                       // 寒露、霜降：菊花
+    for (const [ex, ey] of [[-5, -16], [4, -19], [0, -11]]){
+      twig([[cx, y], [cx + ex, y + ey]], HC.leafDk);
+      const fx = cx + ex, fy = y + ey;
+      for (const [dx, dy] of [[0, -2], [-2, 0], [2, 0], [0, 2], [-1, -1], [1, -1], [-1, 1], [1, 1]]) dot(fx + dx, fy + dy, ex > 0 ? '#f0a03c' : HC.gold);
+      dot(fx, fy, HC.goldDk);
+    }
+    dot(cx - 3, y - 7, HC.leaf); dot(cx + 3, y - 9, HC.leaf); dot(cx - 2, y - 8, HC.leafLt);
+  } else {                                                   // 立冬 – 大雪：红叶
+    twig([[cx, y], [cx - 1, y - 12], [cx - 6, y - 21]], HC.wdk); twig([[cx - 1, y - 12], [cx + 6, y - 19]], HC.wdk);
+    for (const [px, py, c] of [[-6, -22, HC.red], [-3, -17, '#e0703a'], [5, -20, HC.redLt], [2, -15, HC.red], [-7, -15, '#e0703a'], [7, -16, HC.red]]){
+      dot(cx + px, y + py, c); dot(cx + px - 1, y + py + 1, c); dot(cx + px + 1, y + py + 1, c); dot(cx + px, y + py + 1, HC.lacD);
+    }
+  }
+}
+/* 门厅置物板上的季节小物：春 = 一盆水仙，夏 = 团扇，秋 = 一盘柿子（柿柿如意），冬 = 铜手炉 */
+function seasonItem(x, base, season){
+  if (season === 0){
+    rect(x - 4, base - 4, 9, 4, OUTL); rect(x - 3, base - 3, 7, 2, HC.blue); rect(x - 3, base - 3, 7, 1, HC.blueLt);
+    for (const [dx, h] of [[-2, 7], [0, 9], [2, 6], [1, 8]]) rect(x + dx, base - 4 - h, 1, h, HC.leaf);
+    for (const [dx, dy] of [[-3, -12], [2, -13]]){ rect(x + dx, base + dy, 3, 3, HC.white); dot(x + dx + 1, base + dy + 1, HC.gold); }
+  } else if (season === 1){
+    rect(x, base - 6, 1, 6, HC.wdk); rect(x - 2, base - 1, 5, 1, HC.wdk);
+    disc(x, base - 12, 6, OUTL); disc(x, base - 12, 5, HC.white);
+    rect(x - 3, base - 11, 4, 2, HC.pink); dot(x - 2, base - 12, HC.pinkLt); twig([[x - 1, base - 9], [x + 3, base - 14]], HC.leafDk);
+  } else if (season === 2){
+    rect(x - 7, base - 2, 15, 2, OUTL); rect(x - 6, base - 2, 13, 1, HC.celadon);
+    for (const dx of [-3, 3]){ disc(x + dx, base - 6, 3, OUTL); disc(x + dx, base - 6, 2, '#f08a2e'); dot(x + dx - 1, base - 7, '#ffc070'); rect(x + dx - 1, base - 10, 3, 1, HC.leafDk); }
+  } else {
+    rect(x - 5, base - 3, 11, 3, OUTL); rect(x - 4, base - 3, 9, 2, HC.goldDk);
+    disc(x, base - 6, 4, OUTL); disc(x, base - 6, 3, HC.gold); dot(x - 1, base - 8, HC.goldLt);
+    for (const dx of [-2, 0, 2]) dot(x + dx, base - 6, HC.goldDk);
+    rect(x - 4, base - 11, 9, 1, OUTL); dot(x, base - 12, HC.gold);
+  }
 }
 
 /* ---------- 书房：两个高高的博古架、绣墩、一路往上的置物板、星图手卷 ---------- */
@@ -390,10 +531,9 @@ function drawTeaCorner(tc){
   art(TEAPOT, TEAPOT_PAL, 978, 446);
   boxO(966, 450, 5, 5, HC.celadon);
   boxO(997, 450, 5, 5, HC.porc);
-  // 墙角的青花大瓶，插一枝梅
+  // 墙角的青花大瓶，插的花跟着节气换
   for (let j = 0; j < 22; j++){ const w = [3, 3, 4, 5, 6, 7, 7, 7, 7, 7, 7, 6, 6, 5, 5, 5, 5, 5, 6, 6, 5, 4][j]; rect(1032 - w - 1, 448 + j, w * 2 + 3, 1, OUTL); rect(1032 - w, 448 + j, w * 2 + 1, 1, j % 7 === 3 ? HC.blue : HC.porc); }
-  for (let i = 0; i < 22; i++) dot(1032 + Math.round(Math.sin(i * 0.3) * 3) - (i > 12 ? i - 12 : 0), 448 - i, HC.wdk);
-  for (const [px, py] of [[1029, 432], [1024, 428], [1035, 438], [1020, 426]]) { dot(px, py, HC.pink); dot(px + 1, py, HC.pinkLt); dot(px, py + 1, HC.pinkDk); }
+  seasonVase(1032, 448);   // 插的花跟着节气换
   // 通往阁楼的一排置物板
   wallShelf(1060, 1100, 430, 'books');
   wallShelf(1115, 1155, 390);
@@ -488,6 +628,7 @@ function drawMezzanine(tc){
   for (const [x, y] of [[1231, 241], [1253, 241], [1231, 276], [1253, 276]]) rect(x, y, 3, 3, HC.gold);
   rect(1241, 252, 5, 5, HC.gold); dot(1243, 254, HC.goldDk);
   lanternArt(...LANTERNS[2]);
+  latticeWindow(...LOFT_WIN);   // 新开的格子窗
   // 一摞线装书 + 小地毯
   bookStack(1487, 280, 4, 2);
   rect(1308, 278, 104, 2, OUTL); rect(1309, 278, 102, 1, tc.rug); for (let x = 1312; x < 1410; x += 5) dot(x, 278, HC.gold);
@@ -498,50 +639,74 @@ function drawMezzanine(tc){
    从窗户里看出去：上面是星空和行星，下面是庭院的白墙黛瓦和竹子
    ============================================================ */
 const FAR_W = 1200, FAR_H = 340;
-const farCv = (() => {
+/* 三种天色：夜里（星海、亮着灯）、傍晚（晚霞，几颗星，亮着灯）、白天（穹顶里的人造天光：浅蓝天，白墙，灯不亮） */
+const FAR_PAL = {
+  night: {
+    sky: ['#0f1433', '#141a3e', '#1a2048', '#212658', '#292d63', '#33336c', '#3f3a76'], nebula: 1, stars: 1, starTop: 200, planet: 1,
+    moon: ['#d8d6e6', '#efedf6', '#b9b6cc'], isle: ['#3a3466', '#2a2550', '#1d1a33'], lit: true, dome: 'rgba(160,180,255,0.10)',
+    roof: ['#3b3a5c', '#4c4b72', '#6a6994', '#1d1a33'], wall: ['#7d7898', '#686382'], bamboo: ['#2f5a46', '#4c7f5e', '#1d3a2c'], ground: '#2b2a44',
+  },
+  dusk: {
+    sky: ['#2b2552', '#45306a', '#6e3a72', '#a24c70', '#d0666a', '#ec8c62', '#f5b26c'], nebula: 0.5, stars: 0.35, starTop: 70, planet: 1,
+    moon: ['#f0d6c8', '#fbeee6', '#d4b3a6'], isle: ['#3a2547', '#2c1d3a', '#20142c'], lit: true, dome: 'rgba(255,200,180,0.10)',
+    roof: ['#4a3550', '#5e4566', '#7e6086', '#251a2e'], wall: ['#c9a092', '#b0857e'], bamboo: ['#33493a', '#4f6a52', '#1f2e26'], ground: '#3a2a3c',
+  },
+  day: {
+    sky: ['#4f7cc4', '#5d89cc', '#6c96d3', '#7ca3da', '#8eb2e1', '#a3c2e8', '#bad3ee'], nebula: 0, stars: 0, starTop: 0, planet: 0.45,
+    moon: ['#e8eef8', '#f6f9fd', '#cfd9ea'], isle: ['#8796bd', '#7787b0', '#66769e'], lit: false, dome: 'rgba(255,255,255,0.22)',
+    roof: ['#55617e', '#6b7898', '#8e9ab6', '#3c4560'], wall: ['#ece7dd', '#d9d2c5'], bamboo: ['#3f7a50', '#62a06c', '#2b5a3a'], ground: '#9a9a96',
+  },
+};
+function paintFar(P){
   const c = pxCanvas(FAR_W, FAR_H), keep = PG;
   PG = c.getContext('2d');
-  const sky = ['#0f1433', '#141a3e', '#1a2048', '#212658', '#292d63', '#33336c', '#3f3a76'];
+  const sky = P.sky;
   sky.forEach((col, i) => { rect(0, i * 30, FAR_W, 30, col); if (i) dither(0, i * 30 - 2, FAR_W, 4, sky[i - 1], i); });
   rect(0, sky.length * 30, FAR_W, FAR_H, sky[sky.length - 1]);
   // 星云
-  for (const [cx, cy, r, col] of [[430, 140, 46, 'rgba(120,80,150,0.10)'], [820, 90, 40, 'rgba(70,120,140,0.10)'], [980, 150, 50, 'rgba(120,80,150,0.08)'], [160, 120, 44, 'rgba(70,120,140,0.08)']]){
-    for (let k = r; k > 0; k -= 7) disc(cx, cy, k, col);
+  if (P.nebula) for (const [cx, cy, r, col] of [[430, 140, 46, '120,80,150'], [820, 90, 40, '70,120,140'], [980, 150, 50, '120,80,150'], [160, 120, 44, '70,120,140']]){
+    for (let k = r; k > 0; k -= 7) disc(cx, cy, k, `rgba(${col},${(0.09 * P.nebula).toFixed(3)})`);
   }
   // 星星
   for (let i = 0; i < 520; i++){
     const x = Math.floor(hash(i * 2.1) * FAR_W), y = Math.floor(hash(i * 5.3) * 200), b = hash(i * 9.7);
+    if (y >= P.starTop || hash(i * 4.9) > P.stars) continue;
     dot(x, y, b > 0.75 ? '#fff6d8' : (b > 0.4 ? '#cfd8f5' : '#7d84b5'));
   }
-  // 带环的行星（茶室月洞窗里看得到）+ 阁楼圆窗里的小月亮
+  // 带环的行星（茶室月洞窗里看得到）；白天被天光冲淡
   planet(452, 160, 22);
-  disc(800, 108, 7, '#d8d6e6'); disc(802, 106, 5, '#efedf6'); dot(798, 110, '#b9b6cc');
+  if (P.planet < 1){ PG.globalAlpha = 1 - P.planet; rect(408, 130, 90, 50, sky[5]); PG.globalAlpha = 1; }
+  // 阁楼圆窗里的小月亮
+  disc(800, 108, 7, P.moon[0]); disc(802, 106, 5, P.moon[1]); dot(798, 110, P.moon[2]);
   disc(560, 120, 3, '#e6c79a');
   // 漂浮的小岛 + 楼阁（人造小行星上的住处）
-  for (const [cx, cy, w] of [[380, 186, 16], [520, 194, 11], [690, 182, 13], [880, 190, 15], [1010, 184, 12], [240, 190, 12]]) isle(cx, cy, w);
+  for (const [cx, cy, w] of [[380, 186, 16], [520, 194, 11], [690, 182, 13], [880, 190, 15], [1010, 184, 12], [240, 190, 12]]) isle(cx, cy, w, P);
   // 穹顶的骨架线（淡淡的）
   for (let x = 0; x < FAR_W; x++){
     const y1 = Math.round(60 + 40 * Math.cos(x / FAR_W * TAU * 2));
-    PG.fillStyle = 'rgba(160,180,255,0.10)'; PG.fillRect(x, y1, 1, 1);
+    PG.fillStyle = P.dome; PG.fillRect(x, y1, 1, 1);
   }
   // 庭院：黛瓦 + 白墙 + 小灯 + 竹子
-  rect(0, 206, FAR_W, 6, '#3b3a5c');
-  for (let x = 0; x < FAR_W; x += 4){ rect(x, 206, 3, 6, '#4c4b72'); dot(x, 206, '#6a6994'); }
-  rect(0, 211, FAR_W, 1, '#1d1a33');
-  rect(0, 212, FAR_W, FAR_H - 212, '#7d7898'); rect(0, 236, FAR_W, FAR_H - 236, '#686382');
-  for (let x = 30; x < FAR_W; x += 110){ disc(x, 222, 6, 'rgba(255,176,112,0.18)'); rect(x - 1, 219, 3, 5, '#ff7a45'); dot(x, 218, '#2a1a14'); }
+  rect(0, 206, FAR_W, 6, P.roof[0]);
+  for (let x = 0; x < FAR_W; x += 4){ rect(x, 206, 3, 6, P.roof[1]); dot(x, 206, P.roof[2]); }
+  rect(0, 211, FAR_W, 1, P.roof[3]);
+  rect(0, 212, FAR_W, FAR_H - 212, P.wall[0]); rect(0, 236, FAR_W, FAR_H - 236, P.wall[1]);
+  for (let x = 30; x < FAR_W; x += 110){
+    if (P.lit) disc(x, 222, 6, 'rgba(255,176,112,0.18)');
+    rect(x - 1, 219, 3, 5, P.lit ? '#ff7a45' : '#9a3b2c'); dot(x, 218, '#2a1a14');
+  }
   for (let i = 0; i < 46; i++){
     const bx = Math.floor(hash(i * 4.4) * FAR_W), h = 40 + Math.floor(hash(i * 6.1) * 50), lean = (hash(i * 8.2) - 0.5) * 0.1;
     for (let j = 0; j < h; j++){
       const x = Math.round(bx + lean * j), y = 250 - j;
-      dot(x, y, '#2f5a46'); dot(x + 1, y, '#4c7f5e'); if (j % 14 === 0){ dot(x, y, '#1d3a2c'); dot(x + 1, y, '#1d3a2c'); }
-      if (j > h - 28 && j % 7 === 0) for (let t = 0; t < 5; t++){ dot(x + 2 + t, y - (t >> 1), '#2f5a46'); dot(x - 1 - t, y - (t >> 1) + 1, '#4c7f5e'); }
+      dot(x, y, P.bamboo[0]); dot(x + 1, y, P.bamboo[1]); if (j % 14 === 0){ dot(x, y, P.bamboo[2]); dot(x + 1, y, P.bamboo[2]); }
+      if (j > h - 28 && j % 7 === 0) for (let t = 0; t < 5; t++){ dot(x + 2 + t, y - (t >> 1), P.bamboo[0]); dot(x - 1 - t, y - (t >> 1) + 1, P.bamboo[1]); }
     }
   }
-  rect(0, 250, FAR_W, FAR_H - 250, '#2b2a44');
+  rect(0, 250, FAR_W, FAR_H - 250, P.ground);
   PG = keep;
   return c;
-})();
+}
 function planet(cx, cy, r){
   disc(cx, cy, r + 1, '#2a1a14'); disc(cx, cy, r, '#e8a36a');
   for (const [yy, col] of [[-14, '#f6cf95'], [-6, '#b9693f'], [3, '#f6cf95'], [10, '#b9693f']]){
@@ -553,13 +718,14 @@ function planet(cx, cy, r){
     if (Math.sin(a) > 0 || Math.abs(x - cx) > r){ dot(x, y, '#f6dfb0'); dot(x, y + 1, '#b07a30'); }
   }
 }
-function isle(cx, cy, w){
-  for (let k = 0; k < 7; k++) rect(cx - w + k * 2, cy + k, (w - k * 2) * 2, 1, k ? '#2a2550' : '#3a3466');
-  rect(cx - 6, cy - 8, 12, 8, '#1d1a33');
-  rect(cx - 9, cy - 10, 18, 2, '#1d1a33'); dot(cx - 10, cy - 11, '#1d1a33'); dot(cx + 9, cy - 11, '#1d1a33');
-  rect(cx - 4, cy - 14, 8, 4, '#1d1a33'); rect(cx - 6, cy - 15, 12, 1, '#1d1a33');
-  dot(cx - 2, cy - 5, '#ffbb67'); dot(cx - 2, cy - 4, '#ffbb67'); dot(cx + 2, cy - 5, '#ffbb67');
+function isle(cx, cy, w, P){
+  for (let k = 0; k < 7; k++) rect(cx - w + k * 2, cy + k, (w - k * 2) * 2, 1, k ? P.isle[1] : P.isle[0]);
+  rect(cx - 6, cy - 8, 12, 8, P.isle[2]);
+  rect(cx - 9, cy - 10, 18, 2, P.isle[2]); dot(cx - 10, cy - 11, P.isle[2]); dot(cx + 9, cy - 11, P.isle[2]);
+  rect(cx - 4, cy - 14, 8, 4, P.isle[2]); rect(cx - 6, cy - 15, 12, 1, P.isle[2]);
+  if (P.lit){ dot(cx - 2, cy - 5, '#ffbb67'); dot(cx - 2, cy - 4, '#ffbb67'); dot(cx + 2, cy - 5, '#ffbb67'); }
 }
+const FAR = { night: paintFar(FAR_PAL.night), dusk: paintFar(FAR_PAL.dusk), day: paintFar(FAR_PAL.day) };
 /* 雨丝（穹顶里的人工雨）：在远景层上，所以只在窗户里看得见 */
 const RAIN = Array.from({ length: 150 }, (_, i) => ({ x: hash(i * 3.1) * 460, y: hash(i * 7.7) * 270, v: 120 + hash(i * 1.3) * 60 }));
 
@@ -575,7 +741,7 @@ function makeGlow(r, col){
   PG = keep;
   return c;
 }
-const GLOW_S = makeGlow(16, 'rgba(255,200,130,0.28)'), GLOW_L = makeGlow(30, 'rgba(255,180,110,0.22)');
+const GLOW_S = makeGlow(16, 'rgba(255,190,120,0.30)'), GLOW_L = makeGlow(30, 'rgba(255,170,100,0.24)'), GLOW_XL = makeGlow(44, 'rgba(255,150,80,0.14)');
 
 /* ============================================================
    每帧：远景 + 房子（换主题时一格一格溶解过去）+ 会动的小东西
@@ -583,7 +749,7 @@ const GLOW_S = makeGlow(16, 'rgba(255,200,130,0.28)'), GLOW_L = makeGlow(30, 'rg
    ============================================================ */
 let mixCv = null;
 function drawHouseLayer(g, ix, iy, w, h){
-  if (!houseCv || houseTheme !== themeIdx) buildHouse();
+  if (!houseCv || houseTheme !== themeIdx || houseTerm !== currentTerm().i) buildHouse();   // 换主题、换节气时重画
   if (houseOld && washT < 1){
     g.drawImage(houseOld, ix, iy, w, h, 0, 0, w, h);
     if (!mixCv || mixCv.width !== w || mixCv.height !== h) mixCv = pxCanvas(w, h);
@@ -602,21 +768,36 @@ function drawHouseLayer(g, ix, iy, w, h){
 }
 /* 一闪一闪的大星星（远景坐标） */
 const TWINKLE = [[400, 120], [470, 128], [610, 96], [760, 118], [840, 80], [930, 130], [300, 140], [1040, 100]];
+let farMix = null;
 function drawFar(g, t, ix, iy, w, h){
   // 镜头里一个窗户都没有：远景和雨丝都会被房子整个挡住，干脆不画
   if (!WINDOWS.some(([x, y, ww, wh]) => x < ix + w && x + ww > ix && y < iy + h && y + wh > iy)) return;
   const fx = Math.floor(ix * FAR_PAR), fy = Math.floor(iy * FAR_PAR * 0.6);
-  g.drawImage(farCv, fx, fy, w, h, 0, 0, w, h);
+  // 天色：两张之间按比例一格一格溶（和换主题一样的抖动溶解）
+  const m = skyMix(), ls = [['night', m.night], ['dusk', m.dusk], ['day', m.day]].filter(l => l[1] > 0.001).sort((a, b) => b[1] - a[1]);
+  g.drawImage(FAR[ls[0][0]], fx, fy, w, h, 0, 0, w, h);
+  if (ls[1]){
+    if (!farMix || farMix.width !== w || farMix.height !== h) farMix = pxCanvas(w, h);
+    const fm = farMix.getContext('2d');
+    fm.globalCompositeOperation = 'source-over'; fm.clearRect(0, 0, w, h);
+    fm.drawImage(FAR[ls[1][0]], fx, fy, w, h, 0, 0, w, h);
+    fm.globalCompositeOperation = 'destination-in';
+    fm.fillStyle = fm.createPattern(bayerMasks[Math.round(ls[1][1] * 16)], 'repeat');
+    fm.fillRect(0, 0, w, h);
+    fm.globalCompositeOperation = 'source-over';
+    g.drawImage(farMix, 0, 0);
+  }
   PG = g;
-  TWINKLE.forEach(([sx, sy], k) => {
+  if (m.night + m.dusk * 0.4 > 0.5) TWINKLE.forEach(([sx, sy], k) => {
     const b = (t * 1.5 + k * 0.37) % 1, x = sx - fx, y = sy - fy;
     if (b < 0.5){ dot(x, y, '#fff6d8'); if (b > 0.15 && b < 0.35) for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) dot(x + dx, y + dy, 'rgba(255,246,216,0.5)'); }
   });
-  // 镖船：挂着小红旗，慢慢飞过
-  const sx = ((t * 6) % 1400) - 100 - fx, sy = 168 - fy;
-  rect(sx, sy, 14, 3, '#1d1a33'); rect(sx + 2, sy - 2, 8, 2, '#1d1a33'); rect(sx + 4, sy - 6, 1, 4, '#1d1a33');
-  rect(sx + 5, sy - 6, 4, 2, '#c0392b'); dot(sx + 13, sy + 1, '#ffbb67'); dot(sx, sy + 1, '#ff7a45');
-  g.fillStyle = 'rgba(200,214,250,0.55)';
+  // 镖船：挂着小红旗，慢慢飞过（白天是浅一点的剪影，灯不亮）
+  const sx = ((t * 6) % 1400) - 100 - fx, sy = 168 - fy, hull = m.day > 0.5 ? '#56628a' : '#1d1a33';
+  rect(sx, sy, 14, 3, hull); rect(sx + 2, sy - 2, 8, 2, hull); rect(sx + 4, sy - 6, 1, 4, hull);
+  rect(sx + 5, sy - 6, 4, 2, '#c0392b');
+  if (m.day <= 0.5){ dot(sx + 13, sy + 1, '#ffbb67'); dot(sx, sy + 1, '#ff7a45'); }
+  g.fillStyle = m.day > 0.5 ? 'rgba(84,104,150,0.45)' : m.dusk > 0.5 ? 'rgba(255,222,206,0.5)' : 'rgba(200,214,250,0.55)';
   for (const d of RAIN){
     const y = (d.y + t * d.v) % 270 - 10, x = ((d.x - t * d.v * 0.12 - fx) % 460 + 460) % 460 - 6;
     g.fillRect(Math.round(x), Math.round(y), 1, 3);
@@ -647,20 +828,54 @@ function drawHouseLive(g, t, ix, iy){
     rect(X(px + 4), Y(py + 48), pw - 8, 2, HC.paperDk); rect(X(px + 4), Y(py + 48), Math.round((pw - 8) * frac), 2, HC.red);
     rect(X(px + pw - 9), Y(py + 52), 4, 4, HC.red);
   }
-  // 门口的控制面板：屏幕上一个小齿轮在发光，指示灯一闪一闪；鼠标指着时整块亮起来；rabbit 在旁边时冒一个 E 键提示
+  // 门口的控制面板：屏幕上一个小齿轮在发光，指示灯一闪一闪
+  const R = typeof Room !== 'undefined' ? Room : null;
   {
-    const [cx, cy, cw, ch] = CTRL, x = X(cx), y = Y(cy), hot = typeof Room !== 'undefined' && (Room.hover === 'panel' || Room.nearPanel);
+    const [cx, cy, cw] = CTRL, x = X(cx), y = Y(cy), hot = R && (R.hover === 'panel' || R.near === 'panel');
     if (x > -30 && x < 470 && y > -30 && y < 270){
       const gear = ['.#.#.', '#####', '##.##', '#####', '.#.#.'];
       gear.forEach((r, j) => { for (let i = 0; i < 5; i++) if (r[i] === '#') dot(x + 5 + i, y + 4 + j, hot ? '#e8fff6' : HC.jadeLt); });
       if (hot) rect(x + 3, y + 3, cw - 6, 7, 'rgba(166,227,200,0.25)');
       dot(x + cw - 3, y + 14, (t % 1.6) < 1.2 ? '#8fe07e' : '#3f6a3a');
-      if (hot){ rect(x - 1, y - 1, cw + 2, 1, HC.goldLt); rect(x - 1, y + ch, cw + 2, 1, HC.goldLt); rect(x - 1, y, 1, ch, HC.goldLt); rect(x + cw, y, 1, ch, HC.goldLt); }
-      if (typeof Room !== 'undefined' && Room.nearPanel){
-        const ky = y - 13 + Math.round(Math.sin(t * 4)), kx = x + 3;
-        rect(kx + 1, ky, 7, 9, OUTL); rect(kx, ky + 1, 9, 7, OUTL); rect(kx + 1, ky + 1, 7, 7, HC.white); rect(kx + 1, ky + 7, 7, 1, HC.paperDk);
-        rect(kx + 3, ky + 2, 1, 5, OUTL); rect(kx + 3, ky + 2, 3, 1, OUTL); rect(kx + 3, ky + 4, 2, 1, OUTL); rect(kx + 3, ky + 6, 3, 1, OUTL);
+    }
+  }
+  // 日历：上面红条里是几月，中间大大的几号，下面一排小格子是星期（今天那格是红的，周一在最左）
+  {
+    const [cx, cy, cw] = CAL, x = X(cx), y = Y(cy);
+    if (x > -30 && x < 470 && y > -30 && y < 270){
+      const now = new Date(), mo = String(now.getMonth() + 1), dd = String(now.getDate()), wd = (now.getDay() + 6) % 7;
+      const digits = (txt, x0, y0, sc, col) => [...txt].forEach((ch, i) => DIGITS[ch].forEach((r, j) => {
+        for (let k = 0; k < 3; k++) if (r[k] === '#') rect(x0 + i * (3 * sc + 1) + k * sc, y0 + j * sc, sc, sc, col);
+      }));
+      digits(mo, x + Math.round((cw - (mo.length * 4 - 1)) / 2), y + 2, 1, HC.white);
+      digits(dd, x + Math.round((cw - (dd.length * 7 - 1)) / 2), y + 10, 2, HC.ink);
+      for (let k = 0; k < 7; k++) rect(x + 2 + k * 3, y + 22, 2, 2, k === wd ? HC.red : (k >= 5 ? HC.paperDk : '#d9cdb8'));
+    }
+  }
+  // 留声机：放着声音的时候唱片在转、喇叭口飘出小音符
+  {
+    const playing = typeof Ambience !== 'undefined' && Ambience.playing(), x = X(0), y = Y(0);
+    if (X(PHONO[0]) > -40 && X(PHONO[0]) < 480 && Y(PHONO[1]) > -60 && Y(PHONO[1]) < 280 && playing){
+      rect(x + 228 + Math.floor((t * 14) % 13), y + 359, 2, 1, '#7a6a72');
+      const [mx, my] = HORN(1);
+      for (let k = 0; k < 3; k++){
+        const ph = (t * 0.55 + k / 3) % 1, nx = Math.round(x + mx - 2 + ph * 10 + Math.sin(ph * 7 + k) * 2), ny = Math.round(y + my - 8 - ph * 24);   // 往上飘、稍微偏右（左边常站着 rabbit）
+        if (ph > 0.85) continue;
+        const col = k % 2 ? HC.lac : HC.blue;
+        rect(nx + 2, ny, 1, 4, col); rect(nx + 2, ny, 2, 1, col); rect(nx, ny + 3, 2, 2, col); dot(nx + 3, ny + 1, col);
       }
+    }
+  }
+  // 指着 / 站在旁边的东西：一圈亮金边；站在旁边时头顶冒一个 E 键
+  for (const [kind, box] of [['panel', CTRL], ['calendar', CAL], ['phono', PHONO]]){
+    const hot = R && (R.hover === kind || R.near === kind);
+    if (!hot) continue;
+    const [bx, by, bw, bh] = box, x = X(bx), y = Y(by);
+    rect(x - 1, y - 1, bw + 2, 1, HC.goldLt); rect(x - 1, y + bh, bw + 2, 1, HC.goldLt); rect(x - 1, y, 1, bh, HC.goldLt); rect(x + bw, y, 1, bh, HC.goldLt);
+    if (R.near === kind){
+      const ky = y - 13 + Math.round(Math.sin(t * 4)), kx = x + (bw >> 1) - 4;
+      rect(kx + 1, ky, 7, 9, OUTL); rect(kx, ky + 1, 9, 7, OUTL); rect(kx + 1, ky + 1, 7, 7, HC.white); rect(kx + 1, ky + 7, 7, 1, HC.paperDk);
+      rect(kx + 3, ky + 2, 1, 5, OUTL); rect(kx + 3, ky + 2, 3, 1, OUTL); rect(kx + 3, ky + 4, 2, 1, OUTL); rect(kx + 3, ky + 6, 3, 1, OUTL);
     }
   }
   // 全息屏里在下雨 + 闪烁的光标
@@ -683,11 +898,33 @@ function drawHouseLive(g, t, ix, iy){
     const ph = (t * 0.45 + k * 0.5) % 1;
     if (ph < 0.8) dot(X(984) + Math.round(Math.sin(ph * 9 + k) * 1.5), Y(443) - Math.floor(ph * 14), `rgba(255,255,255,${(0.8 - ph) * 0.9})`);
   }
-  // 灯笼 / 宫灯 / 台灯的光（轻轻闪）
-  for (const [k, [lx, ly]] of LANTERNS.entries()){ g.globalAlpha = 0.8 + Math.sin(t * 2.2 + k) * 0.12; g.drawImage(GLOW_L, X(lx) - 30, Y(ly + 11) - 30); }
-  g.globalAlpha = 0.85 + Math.sin(t * 2) * 0.1;   g.drawImage(GLOW_S, X(1343) - 16, Y(415) - 16);
-  g.globalAlpha = 0.85 + Math.sin(t * 1.7) * 0.1; g.drawImage(GLOW_L, X(1710) - 30, Y(410) - 30);
-  g.globalAlpha = 1;
+}
+
+/* ============================================================
+   天光（最后叠在整个画面上，人物也在里面）：夜里正片叠底一层月光蓝、傍晚一层晚霞橘；
+   灯笼、宫灯、台灯在傍晚开始亮，夜里最亮（叠加的暖光，轻轻闪）；白天不亮
+   c2 已经按像素缩放好，原点是镜头左上角；camX / camY 是镜头位置（像素）
+   ============================================================ */
+const LAMPS = [...LANTERNS.map(([x, y]) => [x, y + 11, 'L']), [1343, 415, 'S'], [1710, 410, 'L']];
+function drawLights(c2, t, camX, camY, q, VW, VH){
+  const m = skyMix(), lit = Math.min(1, m.night + m.dusk * 0.6);
+  // 正片叠底：颜色还在，只是整体变暗、偏月光的蓝 / 晚霞的橘
+  c2.globalCompositeOperation = 'multiply';
+  if (m.night > 0.001){ c2.fillStyle = `rgba(112,122,196,${m.night.toFixed(3)})`; c2.fillRect(0, 0, VW, VH); }
+  if (m.dusk > 0.001){ c2.fillStyle = `rgba(255,196,160,${m.dusk.toFixed(3)})`; c2.fillRect(0, 0, VW, VH); }
+  c2.globalCompositeOperation = 'source-over';
+  if (lit < 0.01) return;
+  c2.globalCompositeOperation = 'lighter';
+  LAMPS.forEach(([lx, ly, size], k) => {
+    const x = q(lx - camX), y = q(ly - camY);
+    if (x < -50 || x > VW + 50 || y < -50 || y > VH + 50) return;
+    const flick = 0.85 + Math.sin(t * 2.1 + k * 1.7) * 0.1 + Math.sin(t * 7.3 + k) * 0.05;
+    c2.globalAlpha = lit * flick;
+    if (size === 'L'){ c2.drawImage(GLOW_XL, x - 44, y - 44); c2.drawImage(GLOW_L, x - 30, y - 30); }
+    c2.drawImage(GLOW_S, x - 16, y - 16);
+  });
+  c2.globalAlpha = 1;
+  c2.globalCompositeOperation = 'source-over';
 }
 
 /* ============================================================

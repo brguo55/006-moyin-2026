@@ -154,6 +154,7 @@ function onDataReplaced(){
   setMuted(s.muted);
   App.themeVars();
   Pomo.refresh();
+  SoundDesk.applyAll();   // 备份里开着的环境声
 }
 
 /* ---------- 启动 ---------- */
