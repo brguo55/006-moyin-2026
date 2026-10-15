@@ -3,7 +3,7 @@
    （改了文件不用手动改版本号；下次打开就是新版。只有增删文件时才需要改 SHELL）
    用户数据在 IndexedDB 里，与这里的缓存无关，清缓存不会丢数据。
    ============================================================ */
-const CACHE = 'tingyu-rabbit-v18';
+const CACHE = 'tingyu-rabbit-v19';
 const SHELL = [
   './', 'index.html', 'manifest.webmanifest',
   'css/stage.css', 'css/app.css',
@@ -20,9 +20,10 @@ const SHELL = [
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)).then(() => self.skipWaiting()));
 });
+/* 只清自己的旧缓存：同一个 github.io 域名下的别的网页（比如天气模拟器）也用这块地方，不能动它们的 */
 self.addEventListener('activate', e => {
   e.waitUntil(caches.keys()
-    .then(keys => Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k))))
+    .then(keys => Promise.all(keys.filter(k => k.startsWith('tingyu-') && k !== CACHE).map(k => caches.delete(k))))
     .then(() => self.clients.claim()));
 });
 /* 像素字体（jsDelivr 上的 Fusion Pixel）：第一次联网时存下来，之后离线也能用 */
