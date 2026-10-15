@@ -482,7 +482,7 @@ function bambooScroll(x, y, w, h){
   rect(x + w - 7, y + h - 9, 4, 4, HC.red);   // 红印
 }
 /* 练功的架子（门口、书架、窗户上面，room.js 的 TRAIN）：一块块木板，有的上面摆点小东西；左上角吊着音箱；墙上一块匾、一幅竹子 */
-const TRAIN_ITEMS = { 2: 'bonsai', 5: 'books', 9: 'bell', 11: 'books', 14: 'bonsai', 17: 'books', 19: 'bell' };   // 第几块板上摆什么
+const TRAIN_ITEMS = { 0: 'bonsai', 3: 'books', 4: 'bell', 6: 'books' };   // 第几块板上摆什么
 function drawTraining(){
   prop('plaque', () => plaque(190, 40));
   prop('bamboo_painting', () => bambooScroll(1284, 44, 30, 112));
