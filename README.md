@@ -2,7 +2,7 @@
 
 A planner that runs in the browser: tasks, a pomodoro timer and habit tracking, in cozy pixel art.
 
-**Live:** https://brguo55.github.io/006-tingyu-2026/
+**Live:** https://brguo55.github.io/006-moyin-2026/
 
 ## Features
 
