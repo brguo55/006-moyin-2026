@@ -67,10 +67,8 @@ const PROPS = {
   bamboo_painting:{ name: '竹子画挂轴', at: [1280, 37], size: [38, 122] },
   speaker:        { name: '音箱（连两根铜链；放声音时的音符、指示灯由程序画）', at: [26, 10], size: [26, 46] },
   fan_window:     { name: '扇面窗（玻璃留透明）', at: [354, 100], size: [89, 49], window: true },
-  bookcase_1:     { name: '书柜 1（最矮，顶面能站）', at: [468, 410], size: [92, 60] },
-  bookcase_2:     { name: '书柜 2（顶面能站）', at: [566, 370], size: [104, 100] },
-  bookcase_3:     { name: '书柜 3（顶面能站）', at: [676, 330], size: [107, 140] },
-  bookcase_4:     { name: '书柜 4（最高，顶面能站）', at: [786, 290], size: [106, 180] },
+  bookcase_1:     { name: '书柜 1（矮的那个，顶面能站）', at: [468, 410], size: [92, 60] },
+  bookcase_2:     { name: '书柜 2（高的那个，顶面能站）', at: [566, 370], size: [104, 100] },
   step_stool:     { name: '踏凳（顶面能站）', at: [474, 450], size: [26, 20] },
   star_chart:     { name: '星图手卷', at: [687, 92], size: [71, 45] },
   moon_window:    { name: '月洞窗和窗台（玻璃留透明，窗台能站）', at: [1064, 311], size: [112, 118], window: true },
@@ -578,7 +576,7 @@ function seasonItem(x, base, season){
   }
 }
 
-/* ---------- 书架：四个一个比一个高的书柜（顶面能站，像台阶）、踏凳、星图手卷 ---------- */
+/* ---------- 书架：两个书柜（一矮一高，顶面能站）、踏凳、星图手卷 ---------- */
 function curioShelf(x0, x1, top, seed){
   const bx = x0 + 2, bw = x1 - x0 - 4, by = top + 4, bh = A_FL - by;
   boxO(bx, by, bw, bh, HC.wdk);
@@ -612,17 +610,16 @@ function wallShelf(x0, x1, y, item){
   else if (item === 'bell') art(BELL, BELL_PAL, x1 - 16, y - 10);
 }
 function drawLibrary(){
-  BOOKCASES.forEach(([x0, x1, top], i) => prop('bookcase_' + (i + 1), () => curioShelf(x0, x1, top, i * 3 + 1)));   // 四个书柜，格子里塞满书、瓷瓶、盆景、书匣
+  BOOKCASES.forEach(([x0, x1, top], i) => prop('bookcase_' + (i + 1), () => curioShelf(x0, x1, top, i * 3 + 1)));   // 两个书柜，格子里放着书、瓷瓶、盆景、书匣
   // 踏凳（能站：顶面 450）：先踩它，再一级一级跳上书柜
   prop('step_stool', () => {
     bevel(474, 450, 26, 4, HC.wl, HC.wh, HC.wd);
     for (const x of [476, 494]) boxO(x, 454, 4, 16, HC.wd);
     rect(478, 461, 18, 2, HC.wd);
   });
-  // 书柜顶上：一个青花瓶、一摞书、一个铜铃
-  art(VASE, VASE_PAL, 474, 402);
-  bookStack(640, 370, 3, 4);
-  art(BELL, BELL_PAL, 764, 320);
+  // 书柜顶上：一个青花瓶、一摞书
+  art(VASE, VASE_PAL, BOOKCASES[0][0] + 6, BOOKCASES[0][2] - 8);
+  bookStack(BOOKCASES[1][1] - 24, BOOKCASES[1][2], 3, 4);
   // 星图手卷（挂在书柜上面的墙上）：星星连成线，盖一个红印
   prop('star_chart', starChart);
 }
