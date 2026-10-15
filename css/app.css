@@ -368,7 +368,7 @@ body.immersive #immersive{ display: block; }
 .dlg-x{ margin: -6px -6px 2px 0; padding: 0 6px; border: 0; background: none; cursor: pointer; color: var(--ink-2); font-size: 18px; line-height: 24px; }
 .dlg-x:hover{ color: var(--ink); background: rgba(62,48,38,.06); }
 
-/* 留声机：一行一种声音 —— 勾选、像素小图标、名字（下面一行小字）、音量滑块 */
+/* 音箱：一行一种声音 —— 勾选、像素小图标、名字（下面一行小字）、音量滑块 */
 .snd-rows{ display: flex; flex-direction: column; margin: 8px 0 4px; }
 .snd-row{ display: flex; align-items: center; gap: 8px; padding: 6px 0; border-top: 2px dashed var(--line); }
 .snd-icon svg{ display: block; width: 18px; height: 18px; }

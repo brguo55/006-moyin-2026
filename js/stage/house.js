@@ -7,7 +7,7 @@
    分层（从远到近）：
      窗外远景（星海 + 庭院，跟着镜头只移动一半；白天 / 傍晚 / 夜里三张，按真实时间一格一格溶过去）+ 雨丝
      房子（静态：墙、地板、家具 —— 预先画好一整张；窗户是透明的，透出后面的远景；换节气时重画瓶花和小摆设）
-     会动的小东西（挂轴上的番茄钟、日历、留声机、屏幕里的雨、挂钟、茶的热气）
+     会动的小东西（挂轴上的番茄钟、日历、音箱、屏幕里的雨、挂钟、茶的热气）
      人物（room.js 画）
      前景（红漆柱、垂下来的藤、大瓷瓶：比中景移动得快 → 景深）
      天光（夜里整个画面暗一点、灯笼亮起来；傍晚带点橘色）—— drawLights，最后叠上去
@@ -296,11 +296,12 @@ function scroll(x, y, w, h){
 
 /* 门口墙上的控制面板（像空调遥控器）：点它、或者飘到旁边按 E → 打开设置 */
 const CTRL = [150, 408, 15, 20];   // x, y, 宽, 高（像素）
-/* 门厅左上：两块置物板（能站，room.js 里的平台）、留声机（点它或者站到它旁边按 E → 声音）、门边的日历（点它 → 月历） */
+/* 门厅左上：两块置物板（能站，room.js 里的平台）、音箱（点它或者站到它那块置物板上按 E → 声音）、门边的日历（点它 → 月历） */
 const SHELF_A = [226, 268, 418], SHELF_B = [196, 254, 374];   // x0、x1、顶面 y
-const PHONO = [218, 332, 36, 42];                             // 留声机的外接框
+const SPEAKER = [224, 340, 26, 34];                           // 音箱（x, y, 宽, 高）
+const SPEAKER_SHELF = SHELF_B;                                // 站在这块板上能按 E 开音箱
 const CAL = [170, 389, 24, 28];                               // 日历
-const THINGS = [['panel', CTRL], ['calendar', CAL], ['phono', PHONO]];   // 能互动的东西（room.js 判断点到 / 站到了哪个；这里画亮边）
+const THINGS = [['panel', CTRL], ['calendar', CAL], ['speaker', SPEAKER]];   // 能互动的东西（room.js 判断点到 / 站到了哪个；这里画亮边）
 /* ---------- 门厅：格扇门、对联、油纸伞、衣帽架（斗笠 + 粉斗篷）、鞋凳、控制面板 ---------- */
 function drawEntrance(){
   bevel(46, 391, 53, 79, HC.lac, HC.lacL, HC.lacD);
@@ -330,12 +331,12 @@ function drawEntrance(){
   bevel(165, 456, 51, 4, HC.wl, HC.wh, HC.wd);
   for (const x of [168, 209]) boxO(x, 460, 4, 10, HC.wd);
   art(BOOT, BOOT_PAL, 176, 465); art(BOOT, BOOT_PAL, 188, 465);
-  // 扇面窗、两块置物板（下面那块摆着跟着节气换的小东西）、留声机、日历
+  // 扇面窗、两块置物板（下面那块摆着跟着节气换的小东西）、音箱、日历
   fanWindow(...FAN);
   wallShelf(SHELF_A[0], SHELF_A[1], SHELF_A[2]);
   seasonItem(SHELF_A[1] - 14, SHELF_A[2], termSeason(currentTerm().i));
   wallShelf(SHELF_B[0], SHELF_B[1], SHELF_B[2]);
-  gramophone();
+  speakerBox(...SPEAKER);
   wallCalendar();
   // 控制面板：铜框、玉色小屏幕（内容每帧画）、两个小按钮
   const [cx, cy, cw, ch] = CTRL;
@@ -345,24 +346,18 @@ function drawEntrance(){
   for (const bx of [cx + 3, cx + 8]) { rect(bx, cy + 13, 4, 3, OUTL); rect(bx + 1, cy + 14, 2, 1, HC.wl); }
 }
 
-/* 留声机：木柜、转盘上的唱片、右边的摇柄；铜喇叭从柜子后面往左上弯出去，越来越粗，最后张开 */
-const HORN = s => [244 - 15 * s, 358 - 9 * s - 6 * s * s, 1 + 7.5 * s * s];   // 喇叭的中心线：x, y, 半径（s 从颈子 0 到喇叭口 1）
-function gramophone(){
-  bevel(226, 362, 23, 12, HC.wm, HC.wl, HC.wd);
-  rect(228, 366, 19, 1, HC.gold);
-  rect(233, 368, 9, 3, OUTL); rect(234, 369, 7, 1, HC.goldDk);
-  rect(249, 367, 2, 1, OUTL); rect(250, 364, 1, 4, OUTL); rect(251, 364, 2, 1, OUTL); dot(252, 363, HC.gold);
-  rect(227, 361, 18, 1, HC.goldDk);
-  rect(228, 359, 15, 2, '#1d1416'); dot(235, 359, HC.red);
-  for (const pass of [0, 1]) for (let s = 0; s <= 1.001; s += 0.04){
-    const [x, y, r] = HORN(s);
-    disc(Math.round(x), Math.round(y), Math.round(r) + (pass ? 0 : 1), pass ? HC.gold : OUTL);
-  }
-  for (let s = 0.15; s <= 1.001; s += 0.04){ const [x, y, r] = HORN(s); dot(Math.round(x + r * 0.3), Math.round(y - r * 0.8), HC.goldLt); }
-  for (let s = 0.3; s <= 1.001; s += 0.05){ const [x, y, r] = HORN(s); dot(Math.round(x - r * 0.2), Math.round(y + r * 0.85), HC.goldDk); }
-  const [mx, my, mr] = HORN(1);
-  disc(Math.round(mx) - 1, Math.round(my) - 1, Math.round(mr) - 2, '#3a2216');
-  disc(Math.round(mx) - 2, Math.round(my) - 2, Math.round(mr) - 5, '#24140d');
+/* 音箱：深色木箱、编织的网罩，上面一个小高音、下面一个铜圈的大低音，四角包铜，右下角一颗指示灯；
+   放着声音的时候低音一鼓一鼓、指示灯亮起来、旁边飘出小音符（drawHouseLive） */
+const SPK_CONE = (x, y, w, h) => [x + (w >> 1), y + h - 12];   // 低音的圆心
+function speakerBox(x, y, w, h){
+  bevel(x, y, w, h, HC.wd, HC.wm, HC.wdk);
+  rect(x + 2, y + 2, w - 4, h - 4, '#2b1d18'); dither(x + 2, y + 2, w - 4, h - 4, '#3b2a22');   // 网罩
+  const cx = x + (w >> 1), [, cy] = SPK_CONE(x, y, w, h);
+  disc(cx, y + 8, 4, HC.goldDk); disc(cx, y + 8, 3, '#1d1416'); dot(cx, y + 8, '#5a4a44'); dot(cx - 1, y + 7, '#7a6a62');   // 高音
+  disc(cx, cy, 9, HC.goldDk); disc(cx, cy, 8, HC.gold); disc(cx, cy, 7, '#1d1416');                                       // 低音的铜圈
+  ring(cx, cy, 5, '#3a2e2a'); disc(cx, cy, 2, '#4a3c36'); dot(cx - 1, cy - 1, '#7a6a62');                                 // 折环、防尘帽
+  for (const [dx, dy] of [[1, 1], [w - 2, 1], [1, h - 2], [w - 2, h - 2]]) dot(x + dx, y + dy, HC.gold);                // 包角
+  dot(x + w - 4, y + h - 4, HC.jadeDk);                                                                                   // 指示灯（没放声音时暗着）
 }
 /* 撕页日历：钉子 + 挂绳、红色的月份条、白纸、下面一叠纸边（月、日、星期每帧画） */
 function wallCalendar(){
@@ -853,14 +848,15 @@ function drawHouseLive(g, t, ix, iy){
       for (let k = 0; k < 7; k++) rect(x + 2 + k * 3, y + 22, 2, 2, k === wd ? HC.red : (k >= 5 ? HC.paperDk : '#d9cdb8'));
     }
   }
-  // 留声机：放着声音的时候唱片在转、喇叭口飘出小音符
+  // 音箱：放着声音的时候低音一鼓一鼓、指示灯亮、往右边飘出小音符（左边是墙角）
   {
-    const x = X(0), y = Y(0);
-    if (X(PHONO[0]) > -40 && X(PHONO[0]) < 480 && Y(PHONO[1]) > -60 && Y(PHONO[1]) < 280 && typeof Ambience !== 'undefined' && Ambience.playing()){
-      rect(x + 228 + Math.floor((t * 14) % 13), y + 359, 2, 1, '#7a6a72');
-      const [mx, my] = HORN(1);
+    const [sx, sy, sw, sh] = SPEAKER, x = X(sx), y = Y(sy);
+    if (x > -40 && x < 480 && y > -60 && y < 280 && typeof Ambience !== 'undefined' && Ambience.playing()){
+      const [cx, cy] = SPK_CONE(x, y, sw, sh);
+      if ((t * 3.2) % 1 < 0.45){ ring(cx, cy, 6, '#4a3c36'); disc(cx, cy, 2, '#6a5a52'); }
+      dot(x + sw - 4, y + sh - 4, '#8fe07e');
       for (let k = 0; k < 3; k++){
-        const ph = (t * 0.55 + k / 3) % 1, nx = Math.round(x + mx - 2 + ph * 10 + Math.sin(ph * 7 + k) * 2), ny = Math.round(y + my - 8 - ph * 24);   // 往上飘、稍微偏右（左边常站着 rabbit）
+        const ph = (t * 0.5 + k / 3) % 1, nx = Math.round(x + sw + 2 + ph * 20), ny = Math.round(y + 8 + k * 6 - ph * 10 + Math.sin(ph * 7 + k) * 2);
         if (ph > 0.85) continue;
         const col = k % 2 ? HC.lac : HC.blue;
         rect(nx + 2, ny, 1, 4, col); rect(nx + 2, ny, 2, 1, col); rect(nx, ny + 3, 2, 2, col); dot(nx + 3, ny + 1, col);

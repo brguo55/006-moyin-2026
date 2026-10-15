@@ -4,7 +4,7 @@
    ------------------------------------------------------------
    rabbit 坐在一把悬浮的金椅子上（像诸葛亮的四轮车，但是飘着），椅子带着他飘来飘去：
    A / D 左右飘；空格跳（按得越久跳得越高），空中再按一次 = 二段跳；站在家具上按 S 下来；
-   E 互动（旁边是什么就用什么：门口的控制面板 → 设置，日历 → 月历，留声机 → 声音）；W 先空着（以后进门 / 上楼梯）
+   E 互动（旁边是什么就用什么：门口的控制面板 → 设置，日历 → 月历，音箱 → 声音）；W 先空着（以后进门 / 上楼梯）
    打瞌睡的时候这些键都不管用，要点他一下才醒
    动画（sprites.js 的 RABBIT）：平时 idle_rabbit；番茄钟专注时 focus_rabbit_one（喝茶）
    rabbit 左右两边长得不一样（一边衣服、一边机械），不能镜像，所以暂时一直朝右
@@ -16,7 +16,7 @@
    ------------------------------------------------------------
    地图（世界坐标）3600 × 1000，约 4 屏宽、2 屏高；地板 y = 940，阁楼地板 y = 560
    像素坐标就是世界坐标 ÷ 2：1800 × 500，镜头 448 × 252
-   一楼从左到右：门厅（左上有扇面窗、留声机和两块置物板，门边挂着日历）→ 书房（两个高博古架，挑高到屋顶）→ 茶室（月洞窗、番茄钟挂轴、茶桌）→ 工作间（书案、全息屏）→ 格子窗
+   一楼从左到右：门厅（左上有扇面窗、音箱和两块置物板，门边挂着日历）→ 书房（两个高博古架，挑高到屋顶）→ 茶室（月洞窗、番茄钟挂轴、茶桌）→ 工作间（书案、全息屏）→ 格子窗
    二楼阁楼（x 2100–3560）：床、圆窗、樟木箱；从茶室旁边的一排置物板跳上去
    ============================================================ */
 
@@ -39,7 +39,7 @@ const plat = (name, x0, x1, y) => { const p = { name, x0, x1, y }; PLATS.push(p)
 plat('阁楼', MEZZ_X0, WALL_R, MEZZ_Y);
 plat('鞋凳', 330, 430, 912);
 plat('置物板', 452, 536, 836);   // 门厅：鞋凳上面那块（摆着节气小物）
-plat('置物板', 392, 508, 748);   // 门厅：留声机那块
+plat('置物板', 392, 508, 748);   // 门厅：音箱那块
 plat('书架', 636, 764, 700);
 plat('书架', 976, 1104, 650);
 plat('小凳', 860, 910, 900);
@@ -74,7 +74,7 @@ const Room = {
   bunny: { x: 1800, y: 860, facing: 1, jump: -1 },
   hearts: [], puffs: [],
   act: null,                        // 正在播的一次性动作：{ kind: 'takeoff' | 'boost' | 'land', t }
-  hover: null, near: null,          // 鼠标指着什么；rabbit 身边能按 E 用的东西（'panel' | 'calendar' | 'phono'）
+  hover: null, near: null,          // 鼠标指着什么；rabbit 身边能按 E 用的东西（'panel' | 'calendar' | 'speaker'）
   s: 1, k: 2, kd: 2, ox: 0, oy: 0,
 
   /* ---------- 布局：镜头画面居中在舞台可用区域；面板开着时最大 1 倍，收起面板（场景放大）时铺满窗口；
@@ -116,10 +116,10 @@ const Room = {
   _touched(){ this.lastInput = Date.now(); this.napT = -1; this.breakNap = false; },
   /* E：互动 —— 看 rabbit 面前是什么。现在只有门口的控制面板：打开设置 */
   interact(){ if (this.near) this._use(this.near); },
-  /* 用一样东西：控制面板 → 设置（滴一声），日历 → 月历，留声机 → 声音（面板那边的函数） */
+  /* 用一样东西：控制面板 → 设置（滴一声），日历 → 月历，音箱 → 声音（面板那边的函数） */
   _use(kind){
     if (kind === 'panel') beep();
-    const fn = { panel: 'openSettings', calendar: 'openCalendar', phono: 'openSoundDesk' }[kind];
+    const fn = { panel: 'openSettings', calendar: 'openCalendar', speaker: 'openSoundDesk' }[kind];
     if (typeof window[fn] === 'function') window[fn]();
   },
   /* S：从平台上跳下来（地板上按没反应） */
@@ -139,7 +139,7 @@ const Room = {
   },
   click(px, py){
     const who = this.hit(px, py);
-    if (who === 'panel' || who === 'calendar' || who === 'phono') this._use(who);
+    if (who === 'panel' || who === 'calendar' || who === 'speaker') this._use(who);
     else if (who === 'rabbit'){
       // 被点一下：做个动作（click）+ 冒红色爱心；睡着时被点就是醒过来，这一下播完才能动
       const napping = this.napT >= 0;
@@ -199,13 +199,14 @@ const Room = {
     const dir = this.dozing() ? 0 : (this.keys.has('KeyD') ? 1 : 0) - (this.keys.has('KeyA') ? 1 : 0);   // 睡着时不听方向键
     this.jumpBuf = Math.max(0, this.jumpBuf - dt);
     this._physics(dt, dir);
-    // 身边能按 E 的东西：控制面板、日历在地上 / 鞋凳上够得着；留声机要站到它那块置物板上；挑最近的那个
+    // 身边能按 E 的东西：控制面板、日历在地上 / 鞋凳上够得着；音箱要站到它那块置物板上；挑最近的那个
     this.near = null;
     if (this.grounded){
       let best = 60;
       for (const [kind, [cx, , cw]] of THINGS){
-        const reach = kind === 'phono' ? Math.abs(this.y - SHELF_B[2] * PX) < 30 : this.y > FLOOR_Y - 60;
-        const d = Math.abs(this.x - (cx + cw / 2) * PX);
+        const onShelf = kind === 'speaker' && Math.abs(this.y - SPEAKER_SHELF[2] * PX) < 30 && this.x > SPEAKER_SHELF[0] * PX - 10 && this.x < SPEAKER_SHELF[1] * PX + 10;
+        const reach = kind === 'speaker' ? onShelf : this.y > FLOOR_Y - 60;
+        const d = onShelf ? 0 : Math.abs(this.x - (cx + cw / 2) * PX);   // 站在音箱那块板上，在哪儿都算
         if (reach && d < best){ best = d; this.near = kind; }
       }
     }
@@ -375,14 +376,14 @@ const Room = {
     // 6) 指着能点的东西：上面冒一张小纸条说明
     this._drawTip(camX, camY);
   },
-  /* 鼠标指着控制面板 / 日历 / 留声机时的小纸条（屏幕坐标，用面板的像素字体） */
+  /* 鼠标指着控制面板 / 日历 / 音箱时的小纸条（屏幕坐标，用面板的像素字体） */
   _drawTip(camX, camY){
     const kind = this.hover, box = kind && (THINGS.find(x => x[0] === kind) || [])[1];
     if (!box) return;
     const now = new Date(), term = currentTerm();
     const text = kind === 'panel' ? '设置'
       : kind === 'calendar' ? `${now.getMonth() + 1}月${now.getDate()}日 · 周${'日一二三四五六'[now.getDay()]} · ${term.day === ymdOf(now) ? '今天' : ''}${term.name}`
-      : typeof Ambience !== 'undefined' && Ambience.playing() ? '留声机 · 在放：' + Ambience.playingNames().join('、') : '留声机 · 点开放雨声、风声……';
+      : typeof Ambience !== 'undefined' && Ambience.playing() ? '音箱 · 在放：' + Ambience.playingNames().join('、') : '音箱 · 点开放雨声、风声……';
     const [bx, by, bw] = box, k = this.k;
     ctx.save();
     ctx.font = '12px "Fusion Pixel 12px Proportional SC", "PingFang SC", sans-serif';

@@ -1,6 +1,6 @@
 "use strict";
 /* ============================================================
-   app/sounddesk.js：留声机 —— 点门厅左上的留声机（或者站到它旁边按 E）打开
+   app/sounddesk.js：音箱 —— 点门厅左上的音箱（或者站到它那块置物板上按 E）打开
    五种环境声（stage/ambience.js 现做的）：各自开关、调大小，可以几种一起放；
    记在 settings.sounds（{ rain: { on, vol } …}），下次打开听雨、点一下画面以后接着放
    ============================================================ */
@@ -33,7 +33,7 @@ const SoundDesk = {
     initAudio();
     this.el.rows = h('div.snd-rows');
     this.el.foot = h('div.snd-foot');
-    this.card = scrollCard({ title: '留声机', onClose: () => { this.card = null; },
+    this.card = scrollCard({ title: '音箱', onClose: () => { this.card = null; },
       body: [h('p.dlg-text', null, '挑几种声音一起放，滑块调大小。'), this.el.rows, this.el.foot] });
     this.render();
   },
