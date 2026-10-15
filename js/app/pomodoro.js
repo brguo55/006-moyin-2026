@@ -174,8 +174,20 @@ const Pomo = {
     this.reset();
   },
 
-  _today(){
-    const k = dayKey(), ps = Store.data.pomos.filter(p => dayKey(new Date(p.end)) === k);
+  /* 最近 n 天（今天在最后）每天的记录，按结束时间分：先算好每天 0 点的时刻，记录扫一遍就分完 */
+  _byDay(n){
+    const keys = [...Array(n)].map((_, i) => addDays(dayKey(), i - n + 1));
+    const edges = [...keys, addDays(keys[n - 1], 1)].map(k => keyToDate(k).getTime());
+    const days = keys.map(() => []);
+    for (const p of Store.data.pomos){
+      if (!(p.end >= edges[0] && p.end < edges[n])) continue;
+      let i = n - 1;
+      while (p.end < edges[i]) i--;
+      days[i].push(p);
+    }
+    return { keys, days };
+  },
+  _today(ps = this._byDay(1).days[0]){
     return {
       count: ps.filter(p => !p.kind || p.kind === 'pomo').length,
       minutes: ps.reduce((s, p) => s + (p.minutes || 0), 0),
@@ -199,11 +211,10 @@ const Pomo = {
     root.append(e.kinds, e.modes, e.ring, e.round, e.btns, h('label.pomo-task-row', null, '专注于 ', e.task), e.stats, e.week, e.cfg);
 
     // 沉浸模式：面板收起，场景铺满，计时浮在水景上方
-    e.imm = h('div#immersive', null,
-      h('div.imm-mode'), h('div.imm-time'), h('div.imm-task'),
-      h('div.imm-btns', null,
-        h('button.btn.imm-toggle', { onclick: () => this.t.running ? this.pause() : this.start() }),
-        h('button.btn.ghost', { onclick: () => App.immersive(false) }, '退出沉浸')));
+    e.immMode = h('div.imm-mode'); e.immTime = h('div.imm-time'); e.immTask = h('div.imm-task');
+    e.immToggle = h('button.btn.imm-toggle', { onclick: () => this.t.running ? this.pause() : this.start() });
+    e.imm = h('div#immersive', null, e.immMode, e.immTime, e.immTask,
+      h('div.imm-btns', null, e.immToggle, h('button.btn.ghost', { onclick: () => App.immersive(false) }, '退出沉浸')));
     document.body.append(e.imm);
   },
   refresh(){
@@ -234,17 +245,17 @@ const Pomo = {
       ...undone.map(x => h('option', { value: x.id, selected: x.id === t.taskId }, x.title)));
 
     // 今日 + 最近 7 天
-    const td = this._today(), total = Store.data.pomos.filter(p => !p.kind || p.kind === 'pomo').length;
+    const isPomo = p => !p.kind || p.kind === 'pomo';
+    const week = this._byDay(7), td = this._today(week.days[6]), total = Store.data.pomos.filter(isPomo).length;
     e.stats.replaceChildren(
       h('div.stat', null, h('b', null, td.count), h('span', null, '今日番茄')),
       h('div.stat', null, h('b', null, Math.round(td.minutes)), h('span', null, '今日专注（分钟）')),
       t.kind === 'watch' ? h('div.stat', null, h('b', null, Math.round(td.longest)), h('span', null, '今日最长连续（分钟）'))
         : h('div.stat', null, h('b', null, total), h('span', null, '累计番茄')),
     );
-    const days = [...Array(7)].map((_, i) => addDays(dayKey(), i - 6));
-    const counts = days.map(k => Store.data.pomos.filter(p => (!p.kind || p.kind === 'pomo') && dayKey(new Date(p.end)) === k).length);
+    const counts = week.days.map(ps => ps.filter(isPomo).length);
     const max = Math.max(4, ...counts);
-    e.week.replaceChildren(...days.map((k, i) => h('div.wb', { title: `${k}：${counts[i]} 个番茄` },
+    e.week.replaceChildren(...week.keys.map((k, i) => h('div.wb', { title: `${k}：${counts[i]} 个番茄` },
       h('div.wb-bar', { style: { height: (counts[i] / max * 100) + '%' } }),
       h('div.wb-n', null, counts[i] || ''),
       h('div.wb-d', null, i === 6 ? '今' : WEEK[keyToDate(k).getDay()]))));
@@ -285,21 +296,23 @@ const Pomo = {
     const timer = [dur('计时器时长', 'timerSec', 600 * 60)];
     return kind === 'pomo' ? pomo : kind === 'timer' ? timer : [...pomo, ...timer];
   },
-  /* 每次滴答只更新数字（便宜） */
+  /* 每次滴答（半秒一次）只更新数字；和上次一样的就不碰（暂停着的时候什么都不用改） */
   paint(){
     const e = this.el, t = this.t;
     if (!e.time) return;
     const [, frac] = this.display(), txt = t.kind === 'watch' ? fmtClock(this.elapsed()) : mmss(this.remaining());
-    e.time.textContent = txt;
-    e.ring.style.setProperty('--p', (Math.max(0, Math.min(1, frac)) * 360).toFixed(1) + 'deg');
+    setText(e.time, txt);
+    const deg = (Math.max(0, Math.min(1, frac)) * 360).toFixed(1) + 'deg';
+    if (deg !== this._deg){ this._deg = deg; e.ring.style.setProperty('--p', deg); }
     e.ring.classList.toggle('running', t.running);
-    const task = Store.data.tasks.find(x => x.id === t.taskId);
+    const task = t.taskId ? Store.data.tasks.find(x => x.id === t.taskId) : null;
     const started = t.kind === 'watch' ? t.watchAcc > 0 : t.left < this.dur();
-    e.imm.querySelector('.imm-mode').textContent = this.label() + (t.running ? '' : ' · 已暂停');
-    e.imm.querySelector('.imm-time').textContent = txt;
-    e.imm.querySelector('.imm-task').textContent = task ? task.title : '';
-    e.imm.querySelector('.imm-toggle').textContent = t.running ? '暂停' : (started ? '继续' : '开始');
-    document.title = t.running ? `${txt} ${this.label()} · 听雨` : '听雨';
+    setText(e.immMode, this.label() + (t.running ? '' : ' · 已暂停'));
+    setText(e.immTime, txt);
+    setText(e.immTask, task ? task.title : '');
+    setText(e.immToggle, t.running ? '暂停' : (started ? '继续' : '开始'));
+    const title = t.running ? `${txt} ${this.label()} · 听雨` : '听雨';
+    if (document.title !== title) document.title = title;
     App.timerBadge(t.running ? txt : '');
   },
 };

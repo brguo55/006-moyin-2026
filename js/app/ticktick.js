@@ -50,10 +50,12 @@ function ttDate(s){
   const d = new Date(s.replace(/([+-]\d{2})(\d{2})$/, '$1:$2'));
   return isNaN(d) ? null : d;
 }
-/* 这个时刻在某个时区里是哪天、几点 */
+/* 这个时刻在某个时区里是哪天、几点（每个时区的格式器只建一次：建一个很慢，几千个任务一个个建要好几秒） */
+const ttFormats = new Map();
 function ttLocal(d, tz){
   try {
-    const f = new Intl.DateTimeFormat('en-CA', { timeZone: tz || undefined, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
+    let f = ttFormats.get(tz);
+    if (!f) ttFormats.set(tz, f = new Intl.DateTimeFormat('en-CA', { timeZone: tz || undefined, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }));
     const p = Object.fromEntries(f.formatToParts(d).map(x => [x.type, x.value]));
     return { day: `${p.year}-${p.month}-${p.day}`, time: `${p.hour}:${p.minute}` };
   } catch (e){
@@ -171,8 +173,9 @@ const TickTick = {
   },
   /* 最近一次导入的批号（设置里显示「撤销」） */
   lastBatch(){
-    const bs = Store.data.tasks.map(t => t.importBatch).concat(Store.data.lists.map(l => l.importBatch)).filter(Boolean).sort();
-    return bs.length ? bs[bs.length - 1] : null;
+    let last = null;
+    for (const x of [...Store.data.tasks, ...Store.data.lists]) if (x.importBatch && (!last || x.importBatch > last)) last = x.importBatch;
+    return last;
   },
   async undo(){
     const b = this.lastBatch();

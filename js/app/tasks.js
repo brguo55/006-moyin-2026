@@ -73,13 +73,16 @@ const QUADS = {
 };
 const quadVars = q => ({ '--qc': rgb(THEMES[QUADS[q].theme].W), '--qk': rgb(THEMES[QUADS[q].theme].DK) });
 const MUST_MIN = 2, MUST_MAX = 4;
+const LIST_PAGE = 200;   // 一次最多画这么多个没做完的任务（从滴答清单搬来几千个时，不用每次都全画）；后面的点「再显示」
 
 const Tasks = {
   view: 'today',     // 'today' | 'all' | 清单 id
   query: '',
   openId: null,
   showDone: false,
+  pages: 1,          // 没做完的任务画了几批（换清单、换搜索时回到 1）
   el: {},
+  _pomoN: new Map(),   // 任务 id → 做了几个番茄（_countPomos）
 
   mount(root){
     const e = this.el;
@@ -92,7 +95,7 @@ const Tasks = {
       oninput: () => this._hint(), onkeydown: ev => { if (ev.key === 'Enter' && !ev.isComposing) this._add(); } });
     e.date = h('input.add-date', { type: 'date', title: '截止日期（可不填）' });
     e.hint = h('div.add-hint');
-    e.search = h('input.search', { type: 'search', placeholder: '搜索任务', oninput: ev => { this.query = ev.target.value.trim(); this.renderList(); } });
+    e.search = h('input.search', { type: 'search', placeholder: '搜索任务', oninput: ev => { this.query = ev.target.value.trim(); this.pages = 1; this.renderList(); } });
     e.list = h('div.task-list');
     e.tagOptions = h('datalist#tag-options');   // 标签输入框的提示：用过的标签
     // 面板放大时：清单在左边一栏、任务在右边（css：body.panel-max .task-cols）
@@ -109,7 +112,12 @@ const Tasks = {
   },
   refresh(){ this.renderMust(); this.renderChips(); this.renderList(); },
 
-  _lists(){ return Store.data.lists; },
+  /* 每个任务做了几个番茄：画一次列表数一遍（不要每一行都把全部番茄记录翻一遍） */
+  _countPomos(){
+    const n = new Map();
+    for (const p of Store.data.pomos) if (p.taskId) n.set(p.taskId, (n.get(p.taskId) || 0) + 1);
+    this._pomoN = n;
+  },
   _hint(){
     const q = parseQuickDue(this.el.input.value);
     this.el.hint.textContent = q.due && this.el.input.value.trim() ? `截止：${dueText(q)}（${q.due}）` : '';
@@ -119,7 +127,7 @@ const Tasks = {
     if (!raw.trim()) return;
     const q = parseQuickDue(raw);
     const due = this.el.date.value || q.due || (this.view === 'today' ? dayKey() : null);
-    const listId = this._lists().some(l => l.id === this.view) ? this.view : 'inbox';
+    const listId = Store.data.lists.some(l => l.id === this.view) ? this.view : 'inbox';
     const time = due ? q.time : null;
     if (time) Reminders.askPermission();
     Store.update(d => d.tasks.push({ id: uid(), listId, title: q.title, notes: '', due, time, remind: time ? 0 : null, done: false, doneAt: 0, createdAt: Date.now() }));
@@ -140,6 +148,7 @@ const Tasks = {
     const setN = v => Store.update(d => { d.settings.mustN = v; });
     const full = items.length >= n;
     const rows = [];
+    this._countPomos();
     items.forEach((t, i) => rows.push(...this._row(t, i + 1)));
     for (let i = items.length; i < n; i++)
       rows.push(h('div.must-row.empty', null, h('span.must-i', null, i + 1), i === items.length ? inp : h('span.must-blank')));
@@ -176,7 +185,7 @@ const Tasks = {
     if (this.view !== 'today' && this.view !== 'all' && !d.lists.some(l => l.id === this.view)) this.view = 'inbox';   // 清单被删了（比如撤销导入）
     const undone = d.tasks.filter(t => !t.done && !must.has(t.id));   // 和下面的清单一样：不算钉在上面的
     const chip = (id, label, n) => h('button.chip' + (this.view === id ? '.on' : ''),
-      { onclick: () => { this.view = id; this.openId = null; this.refresh(); } }, label, n ? h('span.n', null, n) : null);
+      { onclick: () => { this.view = id; this.openId = null; this.pages = 1; this.refresh(); } }, label, n ? h('span.n', null, n) : null);
     this.el.chips.replaceChildren(
       chip('today', '今天', undone.filter(t => t.due && t.due <= today).length),
       chip('all', '全部', undone.length),
@@ -189,7 +198,7 @@ const Tasks = {
         if (!name) return;
         const id = uid();
         Store.update(dd => dd.lists.push({ id, name, createdAt: Date.now() }));
-        this.view = id; this.refresh();
+        this.view = id; this.pages = 1; this.refresh();
       } }, '＋ 清单'),
     );
     // 自建清单：可改名 / 删除（任务挪回收件箱）
@@ -205,7 +214,7 @@ const Tasks = {
           dd.lists = dd.lists.filter(l => l.id !== cur.id);
           for (const t of dd.tasks) if (t.listId === cur.id) t.listId = 'inbox';
         });
-        this.view = 'inbox'; this.refresh();
+        this.view = 'inbox'; this.pages = 1; this.refresh();
       } }, '删除清单'),
     ] : []));
   },
@@ -262,10 +271,14 @@ const Tasks = {
   renderList(){
     const { undone, done } = this._visible();
     const kids = [];
+    this._countPomos();
     if (this.query) kids.push(h('div.muted.small', null, `搜索「${this.query}」：${undone.length + done.length} 个结果`));
     if (!undone.length && !this.query) kids.push(h('div.empty', null, this.view !== 'today' ? '这里还空着。'
       : this._must().some(t => !t.done) ? '别的事都清空了。' : '今天没有要做的事。听听雨吧。'));
-    for (const t of undone) kids.push(...this._row(t));
+    const cap = LIST_PAGE * this.pages;
+    for (const t of undone.slice(0, cap)) kids.push(...this._row(t));
+    if (undone.length > cap) kids.push(h('button.done-toggle.list-more', { onclick: () => { this.pages++; this.renderList(); } },
+      `▸ 还有 ${undone.length - cap} 个 · 再显示 ${Math.min(LIST_PAGE, undone.length - cap)} 个`));
     if (done.length){
       kids.push(h('button.done-toggle', { onclick: () => { this.showDone = !this.showDone; this.renderList(); } },
         (this.showDone ? '▾ ' : '▸ ') + `已完成 ${done.length}`));
@@ -277,7 +290,7 @@ const Tasks = {
   _row(t, slot){
     const d = Store.data;
     const list = d.lists.find(l => l.id === t.listId);
-    const pomos = d.pomos.filter(p => p.taskId === t.id).length;
+    const pomos = this._pomoN.get(t.id) || 0;
     const open = this.openId === t.id;
     const row = h((slot ? 'div.must-row' : 'div.task') + (t.done ? '.done' : '') + (open ? '.open' : ''), null,
       slot ? h('span.must-i', null, slot) : null,
@@ -396,6 +409,8 @@ const Tasks = {
   reveal(id){
     if (!Store.data.tasks.some(x => x.id === id)) return;
     this.view = 'all'; this.query = ''; this.el.search.value = ''; this.openId = id;
+    const i = this._visible().undone.findIndex(t => t.id === id);   // 排得很靠后的话，画到它那一批
+    this.pages = i < 0 ? 1 : Math.floor(i / LIST_PAGE) + 1;
     App.showTab('tasks');
     const row = this.el.list.querySelector('.task.open') || this.el.must.querySelector('.must-row.open');
     if (row) row.scrollIntoView({ block: 'center' });
@@ -459,10 +474,9 @@ const Tasks = {
 };
 
 /* 像素勾选框：勾是 7×7 的像素图（每列一个 1×2 的小方块），勾上时弹出来 */
-const CHECK_SVG = '<svg viewBox="0 0 7 7" shape-rendering="crispEdges">' +
-  [3, 4, 5, 4, 3, 2, 1].map((y, x) => `<rect x="${x}" y="${y}" width="1" height="2"/>`).join('') + '</svg>';
+const CHECK_SVG = '<svg viewBox="0 0 7 7" shape-rendering="crispEdges"><path d="' +
+  [3, 4, 5, 4, 3, 2, 1].map((y, x) => `M${x} ${y}h1v2h-1z`).join('') + '"/></svg>';
 function checkBox(on, onclick, label){
-  const b = h('button.check' + (on ? '.on' : ''), { onclick: e => { e.stopPropagation(); onclick(); }, 'aria-pressed': on ? 'true' : 'false', 'aria-label': label || '完成' });
-  b.innerHTML = CHECK_SVG;
-  return b;
+  return h('button.check' + (on ? '.on' : ''), { onclick: e => { e.stopPropagation(); onclick(); }, 'aria-pressed': on ? 'true' : 'false', 'aria-label': label || '完成' },
+    svgEl(CHECK_SVG));
 }

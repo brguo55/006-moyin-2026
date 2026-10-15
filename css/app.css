@@ -189,6 +189,7 @@ select{ cursor: pointer; }
 .sub-x:hover{ color: var(--warn); }
 .sub-add{ margin-left: 26px; padding: 3px 2px; font-size: 12px; }
 .done-toggle{ border: 0; background: none; cursor: pointer; color: var(--ink-2); padding: 12px 2px 4px; font-size: 12px; }
+.list-more{ display: block; }   /* 「还有 N 个 · 再显示」自己占一行，不和「已完成」挤在一起 */
 .empty{ color: var(--ink-2); padding: 26px 4px; text-align: center; font-family: var(--hand); font-size: 12px; }
 .search-row{ margin-top: 18px; }
 .search{ width: 100%; font-size: 12px; }

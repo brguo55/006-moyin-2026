@@ -102,10 +102,10 @@ const Backup = {
     if (this.perm !== 'granted' || !this.dir) return;
     if (!force && Store.data.meta.updatedAt <= this.info.folderAt) return;   // 没有新改动
     try {
-      const text = this.serialize();
+      const text = this.serialize(), today = dayKey();
       await writeTextFile(this.dir, 'tingyu-latest.json', text);
-      await writeTextFile(this.dir, `tingyu-${dayKey()}.json`, text);
-      await this._prune();
+      await writeTextFile(this.dir, `tingyu-${today}.json`, text);
+      if (this._prunedOn !== today){ await this._prune(); this._prunedOn = today; }   // 清旧快照一天一次就够（不用每次保存都把文件夹翻一遍）
       this.info.folderAt = Store.data.meta.updatedAt;
       this.error = '';
       await this._mark('folder');

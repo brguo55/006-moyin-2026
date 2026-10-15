@@ -79,3 +79,9 @@ for (let n = 0; n <= 16; n++){
   for (let i = 0; i < 16; i++) if (BAYER4[i] < n) g.fillRect(i % 4, i >> 2, 1, 1);
   bayerMasks.push(c);
 }
+/* 同样 17 档，做成能平铺的花样：第一次用时做好，之后每帧直接拿（不用每帧都 createPattern） */
+let bayerPats = null;
+function bayerPat(n){
+  if (!bayerPats) bayerPats = bayerMasks.map(c => c.getContext('2d').createPattern(c, 'repeat'));
+  return bayerPats[n];
+}

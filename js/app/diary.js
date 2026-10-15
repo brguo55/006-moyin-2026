@@ -12,12 +12,8 @@ const MOODS = [
   { id: 'rain', name: '雨', rows: ['...kk....', '..kkkkk..', '.kkkkkkk.', 'kkkkkkkkk', '.kkkkkkk.', '.........', '.k..k..k.', 'k..k..k..', '.........'] },
 ].map(m => ({ ...m, icon: pixSvg(m.rows) }));
 /* 小图标 + 字 */
-function moodTag(m, tag){
-  const el = h(tag + '.mood-' + m.id);
-  el.innerHTML = m.icon;
-  el.append(m.name);
-  return el;
-}
+const moodTag = (m, tag) => h(tag + '.mood-' + m.id, null, svgEl(m.icon), m.name);
+const DIARY_PEEK = 600;   // 列表里每篇最多显示 4 行，取前面这么多字就够了（很长的日记不用整篇排版）
 
 const Diary = {
   day: null,        // 正在写哪一天
@@ -109,10 +105,10 @@ const Diary = {
     this.el.list.replaceChildren(
       h('div.diary-list-head', null, `写过的日子 · ${days.length} 篇`),
       ...days.map(k => {
-        const en = all[k], m = MOODS.find(x => x.id === en.mood);
+        const en = all[k], m = MOODS.find(x => x.id === en.mood), text = en.text.trim();
         return h('div.diary-item' + (k === this.day ? '.on' : ''), { onclick: () => this.open(k) },
           h('div.diary-item-head', null, h('span', null, this._dayLine(k)), m ? moodTag(m, 'span.diary-mood') : null),
-          en.text.trim() ? h('div.diary-item-text', null, en.text.trim()) : null);
+          text ? h('div.diary-item-text', null, text.slice(0, DIARY_PEEK).replace(/[\uD800-\uDBFF]$/, '')) : null);   // 别把表情符号切成半个
       }));
   },
 };

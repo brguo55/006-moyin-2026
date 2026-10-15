@@ -3,9 +3,6 @@
    app/util.js：DOM 小工具 / 日期 / id / 小纸条提示 / 卷轴对话框
    ============================================================ */
 
-const $  = (sel, root = document) => root.querySelector(sel);
-const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
-
 /* h('button#id.btn.primary', { onclick }, '文字', child…)：建元素。文字一律走 textContent，不拼 HTML */
 function h(tag, attrs, ...kids){
   const [head, ...cls] = tag.split('.');
@@ -27,6 +24,9 @@ function h(tag, attrs, ...kids){
   }
   return el;
 }
+
+/* 改字：和现在一样就不动（每半秒刷新一次的数字，没变的时候不去碰 DOM） */
+const setText = (el, s) => { if (el.textContent !== s) el.textContent = s; };
 
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
 
@@ -70,9 +70,16 @@ function toast(msg){
   setTimeout(() => { el.classList.remove('show'); setTimeout(() => el.remove(), 400); }, 2600);
 }
 
-/* 字符画 → 像素小图标（SVG，k 是一格；颜色跟着 fill） */
-const pixSvg = rows => `<svg viewBox="0 0 ${rows[0].length} ${rows.length}" shape-rendering="crispEdges">` +
-  rows.flatMap((r, y) => [...r].map((c, x) => c === 'k' ? `<rect x="${x}" y="${y}" width="1" height="1"/>` : '')).join('') + '</svg>';
+/* 字符画 → 像素小图标（SVG，k 是一格；颜色跟着 fill）。整张图是一条 path，每行连着的几格合成一段（不是一格一个 rect：元素少，复制得快） */
+const pixSvg = rows => `<svg viewBox="0 0 ${rows[0].length} ${rows.length}" shape-rendering="crispEdges"><path d="` +
+  rows.map((r, y) => [...r.matchAll(/k+/g)].map(m => `M${m.index} ${y}h${m[0].length}v1h-${m[0].length}z`).join('')).join('') + '"/></svg>';
+/* SVG 字符串 → 元素：每种只解析一次，之后复制（一页几百个勾选框时，每个都用 innerHTML 解析很慢） */
+const svgParsed = new Map();
+function svgEl(markup){
+  let t = svgParsed.get(markup);
+  if (!t){ t = document.createElement('template'); t.innerHTML = markup; svgParsed.set(markup, t); }
+  return t.content.firstChild.cloneNode(true);
+}
 
 /* ---------- 像素卷轴：代替浏览器自带的 prompt / confirm，也给声音台、月历用 ----------
    ask({ title, text, input, value, placeholder, ok, danger }) → Promise
@@ -95,12 +102,13 @@ function dlgBird(){
    scrollCard({ title, body, wide, closable, focus, onClose }) → { close, paper }
    body 是纸上的内容；closable = 右上角一个 ×；Esc / 点外面也会关（关之前调 onClose）；
    卷轴开着的时候，按键不去操控 rabbit；Tab 只在卷轴里转 */
+let dlgN = 0;
 function scrollCard({ title, body, wide = false, closable = true, focus = null, onClose = null }){
-  const prev = document.activeElement;
+  const prev = document.activeElement, tid = 'dlg-title-' + (++dlgN);   // 两张卷轴叠着时，标题的 id 也不重复
   const x = closable ? h('button.dlg-x', { title: '关上', 'aria-label': '关上' }, '×') : null;
   const paper = h('div.dlg-paper', null, h('div.dlg-inner', null,
-    h('div.dlg-head', null, h('h3.dlg-title', { id: 'dlg-title' }, title), x), ...[].concat(body)));
-  const box = h('div.dlg' + (wide ? '.wide' : ''), { role: 'dialog', 'aria-modal': 'true', 'aria-labelledby': 'dlg-title' },
+    h('div.dlg-head', null, h('h3.dlg-title', { id: tid }, title), x), ...[].concat(body)));
+  const box = h('div.dlg' + (wide ? '.wide' : ''), { role: 'dialog', 'aria-modal': 'true', 'aria-labelledby': tid },
     dlgBird(), h('div.dlg-rod'), paper, h('div.dlg-rod'));
   const back = h('div.dlg-back', null, box);
   let closed = false;
@@ -140,8 +148,7 @@ function ask({ title, text = '', input = false, value = '', placeholder = '', ma
     const field = input ? h('input.dlg-input', { value, placeholder, maxLength: max }) : null;
     const no = h('button.btn.ghost', null, '取消');
     const yes = h('button.btn.primary' + (danger ? '.danger' : ''), null, ok);
-    const seal = h('span.dlg-seal', { 'aria-hidden': 'true' });
-    seal.innerHTML = SEAL_SVG;
+    const seal = h('span.dlg-seal', { 'aria-hidden': 'true' }, svgEl(SEAL_SVG));
     let result = input ? null : false;   // Esc / 点外面 / 取消
     const card = scrollCard({ title, closable: false, focus: field || (danger ? no : yes), onClose: () => done(result),   // 删除之类的：默认停在「取消」上
       body: [text ? h('p.dlg-text', null, text) : null, field, h('div.dlg-btns', null, seal, no, yes)] });

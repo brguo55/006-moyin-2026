@@ -46,13 +46,15 @@ const App = {
       e.body.append(sec);
     }
     e.maxBtn = h('button.icon-btn.max-btn', { onclick: () => this.setMax(!this.max) });
+    e.date = h('span.brand-date', null, this._dateLine());
     e.panel = h('aside#panel', null,
       h('header.panel-head', null,
-        h('div.brand', null, h('span.brand-name', null, '听雨'), h('span.brand-date', null, this._dateLine())),
+        h('div.brand', null, h('span.brand-name', null, '听雨'), e.date),
         h('div.head-btns', null, e.maxBtn,
           h('button.icon-btn', { title: '收起面板（场景放大）', onclick: () => this.setOpen(false) }, '›'))),
       e.tabs, e.banner, e.body);
-    e.opener = h('button#opener', { title: '打开面板', onclick: () => this.setOpen(true) }, h('span.op-name', null, '听雨'), h('span.op-timer'));
+    e.opTimer = h('span.op-timer');
+    e.opener = h('button#opener', { title: '打开面板', onclick: () => this.setOpen(true) }, h('span.op-name', null, '听雨'), e.opTimer);
     document.body.append(e.panel, e.opener);
     addEventListener('resize', () => this.layout());
     addEventListener('keydown', ev => { if (ev.key === 'Escape' && document.body.classList.contains('immersive')) this.immersive(false); });
@@ -107,7 +109,7 @@ const App = {
     body.classList.toggle('narrow', narrow);
     body.classList.toggle('panel-max', max);
     this.el.maxBtn.title = max ? '恢复面板大小' : '放大面板（铺满窗口）';
-    this.el.maxBtn.innerHTML = max ? MAX_ICON.off : MAX_ICON.on;
+    this.el.maxBtn.replaceChildren(svgEl(max ? MAX_ICON.off : MAX_ICON.on));
     setSceneInset(this.open && !narrow && !immersive ? PANEL_W + PANEL_GAP * 2 : 0);
     const mode = immersive ? 'immersive' : !this.open ? 'big' : (max || narrow) ? 'hidden' : 'split';
     if (mode === 'hidden') Room.clearKeys();
@@ -119,7 +121,7 @@ const App = {
     this.layout();
     Pomo.paint();
   },
-  timerBadge(txt){ if (this.el.opener) this.el.opener.querySelector('.op-timer').textContent = txt; },
+  timerBadge(txt){ if (this.el.opTimer) setText(this.el.opTimer, txt); },
 
   /* 面板配色跟着水色走：淡彩 / 深一阶 / 亮部 */
   themeVars(){
@@ -182,9 +184,14 @@ function onDataReplaced(){
   Reminders.start();         // 到点提醒（schedule.js）
   App.showTab(App.tab);
   App.setOpen(wasOpen);    // showTab 会顺手打开面板；还原成上次的开合状态
-  // 跨过午夜：「今天」要换一天，没做完的任务也跟着挪到新的今天
+  // 跨过午夜：「今天」要换一天（面板顶上的日期也换），没做完的任务也跟着挪到新的今天
   let lastDay = dayKey();
-  setInterval(() => { if (dayKey() !== lastDay){ lastDay = dayKey(); Tasks.rollover(); App.render(); } }, 60e3);
+  setInterval(() => {
+    if (dayKey() === lastDay) return;
+    lastDay = dayKey();
+    App.el.date.textContent = App._dateLine();
+    Tasks.rollover(); App.render();
+  }, 60e3);
 
   // 离线可用：只在 http(s) 下注册（直接双击打开的 file:// 不支持）
   if ('serviceWorker' in navigator && location.protocol.startsWith('http')){

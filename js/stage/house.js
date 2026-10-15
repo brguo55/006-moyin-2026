@@ -146,7 +146,7 @@ function moonGate(cx, cy, r){
   clearDisc(cx, cy, r);
   glints(cx - 30, cy - 4, 18); glints(cx - 24, cy, 8);
   bevel(754, 420, 112, 5, HC.wl, HC.wh, HC.wd);
-  for (const bx of [760, 852]) art(['kmmmk', 'kmmk.', 'kmk..', 'kk...'].map(s => bx > 800 ? [...s].reverse().join('') : s), PW, bx, 425);
+  for (const bx of [760, 852]) art(BRACKET.map(s => bx > 800 ? [...s].reverse().join('') : s), PW, bx, 425);
   rect(770, 425, 80, 2, OUTL); rect(771, 425, 78, 1, HC.wd);
 }
 /* 格子窗：朱漆框，玻璃四周一圈回纹格子，中间留空看外面；窗台顶面 = y + h */
@@ -300,6 +300,7 @@ const CTRL = [150, 408, 15, 20];   // x, y, 宽, 高（像素）
 const SHELF_A = [226, 268, 418], SHELF_B = [196, 254, 374];   // x0、x1、顶面 y
 const PHONO = [218, 332, 36, 42];                             // 留声机的外接框
 const CAL = [170, 389, 24, 28];                               // 日历
+const THINGS = [['panel', CTRL], ['calendar', CAL], ['phono', PHONO]];   // 能互动的东西（room.js 判断点到 / 站到了哪个；这里画亮边）
 /* ---------- 门厅：格扇门、对联、油纸伞、衣帽架（斗笠 + 粉斗篷）、鞋凳、控制面板 ---------- */
 function drawEntrance(){
   bevel(46, 391, 53, 79, HC.lac, HC.lacL, HC.lacD);
@@ -757,7 +758,7 @@ function drawHouseLayer(g, ix, iy, w, h){
     m.globalCompositeOperation = 'source-over'; m.clearRect(0, 0, w, h);
     m.drawImage(houseCv, ix, iy, w, h, 0, 0, w, h);
     m.globalCompositeOperation = 'destination-in';
-    m.fillStyle = m.createPattern(bayerMasks[Math.min(16, Math.floor(easeW(washT) * 17))], 'repeat');
+    m.fillStyle = bayerPat(Math.min(16, Math.floor(easeW(washT) * 17)));
     m.fillRect(0, 0, w, h);
     m.globalCompositeOperation = 'source-over';
     g.drawImage(mixCv, 0, 0);
@@ -782,7 +783,7 @@ function drawFar(g, t, ix, iy, w, h){
     fm.globalCompositeOperation = 'source-over'; fm.clearRect(0, 0, w, h);
     fm.drawImage(FAR[ls[1][0]], fx, fy, w, h, 0, 0, w, h);
     fm.globalCompositeOperation = 'destination-in';
-    fm.fillStyle = fm.createPattern(bayerMasks[Math.round(ls[1][1] * 16)], 'repeat');
+    fm.fillStyle = bayerPat(Math.round(ls[1][1] * 16));
     fm.fillRect(0, 0, w, h);
     fm.globalCompositeOperation = 'source-over';
     g.drawImage(farMix, 0, 0);
@@ -854,8 +855,8 @@ function drawHouseLive(g, t, ix, iy){
   }
   // 留声机：放着声音的时候唱片在转、喇叭口飘出小音符
   {
-    const playing = typeof Ambience !== 'undefined' && Ambience.playing(), x = X(0), y = Y(0);
-    if (X(PHONO[0]) > -40 && X(PHONO[0]) < 480 && Y(PHONO[1]) > -60 && Y(PHONO[1]) < 280 && playing){
+    const x = X(0), y = Y(0);
+    if (X(PHONO[0]) > -40 && X(PHONO[0]) < 480 && Y(PHONO[1]) > -60 && Y(PHONO[1]) < 280 && typeof Ambience !== 'undefined' && Ambience.playing()){
       rect(x + 228 + Math.floor((t * 14) % 13), y + 359, 2, 1, '#7a6a72');
       const [mx, my] = HORN(1);
       for (let k = 0; k < 3; k++){
@@ -867,7 +868,7 @@ function drawHouseLive(g, t, ix, iy){
     }
   }
   // 指着 / 站在旁边的东西：一圈亮金边；站在旁边时头顶冒一个 E 键
-  for (const [kind, box] of [['panel', CTRL], ['calendar', CAL], ['phono', PHONO]]){
+  for (const [kind, box] of THINGS){
     const hot = R && (R.hover === kind || R.near === kind);
     if (!hot) continue;
     const [bx, by, bw, bh] = box, x = X(bx), y = Y(by);

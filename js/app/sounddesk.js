@@ -6,11 +6,11 @@
    ============================================================ */
 
 const SOUND_ICON = {
-  rain: ['...kk....', '..kkkkk..', '.kkkkkkk.', 'kkkkkkkkk', '.kkkkkkk.', '.........', '.k..k..k.', 'k..k..k..', '.........'],
-  wind: ['......kk.', '.......k.', 'kkkkkkkk.', '.........', 'kkkkkkkkk', '........k', 'kkkkk..k.', '....k....', '...k.....'],
-  nature: ['......kkk', '....kkkkk', '...kkkkkk', '..kkkkkk.', '.kkkkkk..', '.kkkkk...', '.kkk.....', 'k........', 'k........'],
-  fire: ['....k....', '...kk....', '...kkk.k.', '..kkkkkk.', '.kkkkkkk.', '.kkk.kkk.', 'kkk...kkk', 'kkk...kkk', '.kkkkkkk.'],
-  train: ['.kkkkkkk.', 'k.......k', 'k.kk.kk.k', 'k.kk.kk.k', 'k.......k', 'kkkkkkkkk', 'k.k...k.k', '.kkkkkkk.', 'k.......k'],
+  rain: pixSvg(['...kk....', '..kkkkk..', '.kkkkkkk.', 'kkkkkkkkk', '.kkkkkkk.', '.........', '.k..k..k.', 'k..k..k..', '.........']),
+  wind: pixSvg(['......kk.', '.......k.', 'kkkkkkkk.', '.........', 'kkkkkkkkk', '........k', 'kkkkk..k.', '....k....', '...k.....']),
+  nature: pixSvg(['......kkk', '....kkkkk', '...kkkkkk', '..kkkkkk.', '.kkkkkk..', '.kkkkk...', '.kkk.....', 'k........', 'k........']),
+  fire: pixSvg(['....k....', '...kk....', '...kkk.k.', '..kkkkkk.', '.kkkkkkk.', '.kkk.kkk.', 'kkk...kkk', 'kkk...kkk', '.kkkkkkk.']),
+  train: pixSvg(['.kkkkkkk.', 'k.......k', 'k.kk.kk.k', 'k.kk.kk.k', 'k.......k', 'kkkkkkkkk', 'k.k...k.k', '.kkkkkkk.', 'k.......k']),
 };
 
 const SoundDesk = {
@@ -40,8 +40,7 @@ const SoundDesk = {
   render(){
     if (!this.card) return;
     this.el.rows.replaceChildren(...SOUNDS.map(s => {
-      const c = this._cfg(s.id), icon = h('span.snd-icon.snd-' + s.id, { 'aria-hidden': 'true' });
-      icon.innerHTML = pixSvg(SOUND_ICON[s.id]);
+      const c = this._cfg(s.id), icon = h('span.snd-icon.snd-' + s.id, { 'aria-hidden': 'true' }, svgEl(SOUND_ICON[s.id]));
       const vol = h('input.snd-vol', { type: 'range', min: 0, max: 100, value: Math.round(c.vol * 100), 'aria-label': s.name + '的音量',
         oninput: e => { const v = +e.target.value / 100; this.set(s.id, { vol: v, on: v > 0 }); this._sync(); } });
       return h('div.snd-row' + (c.on ? '.on' : ''), { 'data-id': s.id },

@@ -39,6 +39,7 @@ function drawViewFrame(x, y, w, h, u){
 
 /* ---------- 主题色板（画面底部一行像素小方块；选中的抬高一点，下面有个小箭头） ---------- */
 const NSWATCH = 7;
+const SWATCH_HEX = THEMES.map(P => ({ W: rgbHex(P.W), LT: rgbHex(P.LT), DK: rgbHex(P.DK) }));   // 色板的颜色先换算好（每帧都要画）
 let hoverIdx = -1;
 function swatchPos(i){
   const u = uiPx(), act = i === themeIdx, hov = i === hoverIdx, s = 14 * u;
@@ -57,12 +58,12 @@ function hitSwatch(px, py){
 }
 function drawSwatches(){
   for (let i = 0; i < NSWATCH; i++){
-    const { x, y, s, u } = swatchPos(i), P = THEMES[i], act = i === themeIdx;
+    const { x, y, s, u } = swatchPos(i), P = SWATCH_HEX[i], act = i === themeIdx;
     fillR(x + u, y + s, s - u, (act ? 3 : 1) * u, 'rgba(40,28,24,0.18)');
     fillR(x + u, y, s - 2 * u, s, OUTL); fillR(x, y + u, s, s - 2 * u, OUTL);
-    fillR(x + u, y + u, s - 2 * u, s - 2 * u, rgbHex(P.W));
-    fillR(x + u, y + u, s - 2 * u, u, rgbHex(P.LT)); fillR(x + u, y + u, u, s - 2 * u, rgbHex(P.LT));
-    fillR(x + u, y + s - 2 * u, s - 2 * u, u, rgbHex(P.DK)); fillR(x + s - 2 * u, y + u, u, s - 2 * u, rgbHex(P.DK));
+    fillR(x + u, y + u, s - 2 * u, s - 2 * u, P.W);
+    fillR(x + u, y + u, s - 2 * u, u, P.LT); fillR(x + u, y + u, u, s - 2 * u, P.LT);
+    fillR(x + u, y + s - 2 * u, s - 2 * u, u, P.DK); fillR(x + s - 2 * u, y + u, u, s - 2 * u, P.DK);
     if (act){   // 小箭头 ▲
       const cx = x + s / 2 - u / 2;
       fillR(cx, y + s + 5 * u, u, u, OUTL); fillR(cx - u, y + s + 6 * u, 3 * u, u, OUTL);

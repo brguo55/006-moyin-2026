@@ -222,7 +222,7 @@ const Ambience = {
     if (id === 'wind') nodes.push(...this._wind(out));
     if (id === 'nature'){
       nodes.push(...this._loop('stream', out, 1.75));
-      return { out, nodes, ...this._critters(out) };
+      return { out, nodes, tick: this._critters(out, nodes) };
     }
     return { out, nodes };
   },
@@ -254,37 +254,41 @@ const Ambience = {
     for (let i = 0; i < n; i++) d[i] = i < x ? raw[i] * Math.sqrt(i / x) + raw[n + i] * Math.sqrt(1 - i / x) : raw[i];
     return (this.bufs.windNoise = buf);
   },
-  /* 鸟和虫：白天隔几秒一声鸟叫（三种叫法，左右随机），夜里换成三只蟋蟀，各唧各的 */
-  _critters(out){
+  /* 鸟和虫：白天隔几秒一声鸟叫（三种叫法，左右随机），夜里换成三只蟋蟀，各唧各的 → 返回往后排声音的 tick(until)
+     一直开着的话一小时要叫上万声：蟋蟀各用一个固定的左右声道（放在 nodes 里，关掉时一起断开），
+     每声鸟叫用完自己的那个声道就断开，不会越积越多 */
+  _critters(out, nodes){
     const now = AC.currentTime;
-    const crickets = [4300, 4650, 4050].map((f, i) => ({ f, pan: [-0.6, 0.5, 0.05][i], next: now + Math.random() }));
+    const panAt = p => { const n = AC.createStereoPanner(); n.pan.value = p; n.connect(out); return n; };
+    const crickets = [4300, 4650, 4050].map((f, i) => ({ f, dest: panAt([-0.6, 0.5, 0.05][i]), next: now + Math.random() }));
+    nodes.push(...crickets.map(c => c.dest));
     let nextBird = now + 0.8;
     const note = (at, f0, f1, dur, vol, dest) => {
       const o = AC.createOscillator(), g = AC.createGain();
       o.frequency.setValueAtTime(f0, at); o.frequency.exponentialRampToValueAtTime(f1, at + dur);
       g.gain.setValueAtTime(0.0001, at); g.gain.exponentialRampToValueAtTime(vol, at + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, at + dur);
       o.connect(g); g.connect(dest); o.start(at); o.stop(at + dur + 0.02);
+      return o;
     };
-    const panAt = p => { const n = AC.createStereoPanner(); n.pan.value = p; n.connect(out); return n; };
     const bird = at => {
       const dest = panAt(rnd(-0.8, 0.8)), kind = Math.floor(Math.random() * 3);
-      if (kind === 0){ const f = rnd(2600, 3600), k = 2 + Math.floor(Math.random() * 3); for (let i = 0; i < k; i++) note(at + i * 0.13, f, f * 1.35, 0.08, 0.12, dest); }
-      else if (kind === 1){ const f = rnd(3800, 4600); for (let i = 0; i < 8; i++) note(at + i * 0.045, f, f * 0.94, 0.03, 0.09, dest); }
-      else { const f = rnd(1800, 2400); note(at, f * 1.25, f, 0.22, 0.12, dest); note(at + 0.3, f * 1.1, f * 0.85, 0.14, 0.1, dest); }
+      let last;   // 排在最后的那个音最后结束：它停了，这声鸟叫的声道就断开
+      if (kind === 0){ const f = rnd(2600, 3600), k = 2 + Math.floor(Math.random() * 3); for (let i = 0; i < k; i++) last = note(at + i * 0.13, f, f * 1.35, 0.08, 0.12, dest); }
+      else if (kind === 1){ const f = rnd(3800, 4600); for (let i = 0; i < 8; i++) last = note(at + i * 0.045, f, f * 0.94, 0.03, 0.09, dest); }
+      else { const f = rnd(1800, 2400); note(at, f * 1.25, f, 0.22, 0.12, dest); last = note(at + 0.3, f * 1.1, f * 0.85, 0.14, 0.1, dest); }
+      last.onended = () => dest.disconnect();
     };
     const cricket = (at, c) => {
-      const o = AC.createOscillator(), g = AC.createGain(), dest = panAt(c.pan);
+      const o = AC.createOscillator(), g = AC.createGain();
       o.frequency.value = c.f;
       g.gain.setValueAtTime(0, at);
       for (let k = 0; k < 4; k++){ const t0 = at + k * 0.028; g.gain.setValueAtTime(0, t0); g.gain.linearRampToValueAtTime(0.05, t0 + 0.004); g.gain.linearRampToValueAtTime(0, t0 + 0.018); }
-      o.connect(g); g.connect(dest); o.start(at); o.stop(at + 0.14);
+      o.connect(g); g.connect(c.dest); o.start(at); o.stop(at + 0.14);
     };
-    return {
-      tick(until){
-        const night = skyMix().night > 0.5;
-        for (; nextBird < until; nextBird += rnd(2.5, 7)) if (!night) bird(nextBird);
-        for (const c of crickets) for (; c.next < until; c.next += rnd(0.55, 1.1)) if (night) cricket(c.next, c);
-      },
+    return until => {
+      const night = skyMix().night > 0.5;
+      for (; nextBird < until; nextBird += rnd(2.5, 7)) if (!night) bird(nextBird);
+      for (const c of crickets) for (; c.next < until; c.next += rnd(0.55, 1.1)) if (night) cricket(c.next, c);
     };
   },
 };

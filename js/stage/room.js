@@ -122,8 +122,6 @@ const Room = {
     const fn = { panel: 'openSettings', calendar: 'openCalendar', phono: 'openSoundDesk' }[kind];
     if (typeof window[fn] === 'function') window[fn]();
   },
-  /* 屋里能互动的东西（像素坐标的框，在 house.js 里定的） */
-  _things(){ return [['panel', CTRL], ['calendar', CAL], ['phono', PHONO]]; },
   /* S：从平台上跳下来（地板上按没反应） */
   dropDown(){
     if (!this.grounded || !this.ground) return;
@@ -133,7 +131,7 @@ const Room = {
 
   hit(px, py){
     const [x, y] = this.toWorld(px, py), b = this.bunny;
-    for (const [kind, [cx, cy, cw, ch]] of this._things())
+    for (const [kind, [cx, cy, cw, ch]] of THINGS)   // 屋里能互动的东西（像素坐标的框，house.js 里定的）
       if (x > cx * PX - 4 && x < (cx + cw) * PX + 4 && y > cy * PX - 4 && y < (cy + ch) * PX + 4) return kind;
     if (Math.hypot(x - b.x, y - b.y) < 18) return 'bunny';
     if (Math.abs(x - this.x) < 40 && y < this.y + 4 && y > this.y - KH) return 'rabbit';
@@ -205,15 +203,14 @@ const Room = {
     this.near = null;
     if (this.grounded){
       let best = 60;
-      for (const [kind, [cx, , cw]] of this._things()){
+      for (const [kind, [cx, , cw]] of THINGS){
         const reach = kind === 'phono' ? Math.abs(this.y - SHELF_B[2] * PX) < 30 : this.y > FLOOR_Y - 60;
         const d = Math.abs(this.x - (cx + cw / 2) * PX);
         if (reach && d < best){ best = d; this.near = kind; }
       }
     }
-    // 椅子是飘着的，走起来不扬灰
+    // 椅子是飘着的，走起来不扬灰（走着的时候镜头往前多看一点）
     const walking = this.grounded && Math.abs(this.vx) > 20;
-    this.walking = walking;
     // 番茄钟：专注时不睡、轮流播喝茶和吃苹果；休息刚开始伸个懒腰；长休息开头打个盹
     const P = typeof Pomo !== 'undefined' ? Pomo.t : null;
     const focusOn = !!(P && P.running && P.mode === 'focus'), breakOn = !!(P && P.running && P.mode !== 'focus');
@@ -380,7 +377,7 @@ const Room = {
   },
   /* 鼠标指着控制面板 / 日历 / 留声机时的小纸条（屏幕坐标，用面板的像素字体） */
   _drawTip(camX, camY){
-    const kind = this.hover, box = kind && (this._things().find(x => x[0] === kind) || [])[1];
+    const kind = this.hover, box = kind && (THINGS.find(x => x[0] === kind) || [])[1];
     if (!box) return;
     const now = new Date(), term = currentTerm();
     const text = kind === 'panel' ? '设置'
@@ -445,7 +442,6 @@ const Room = {
   _drawPuffs(q){
     for (const p of this.puffs){
       const f = p.t / 0.5, x = q(p.x / PX), y = q(p.y / PX);
-      if (p.ring){ pxEllipse(x, y - 1, 5 + f * 20, 2 + f * 5, `rgba(255,255,255,${0.9 * (1 - f)})`); continue; }
       const r = (p.big ? 3 : 2) + Math.floor(f * 3);
       ctx.fillStyle = `rgba(150,130,110,${0.45 * (1 - f)})`;
       for (let dy = -Math.ceil(r * 0.6); dy <= 0; dy++){
@@ -463,13 +459,3 @@ const Room = {
 };
 
 let LO = null;   // 低分辨率画布（镜头看到的那一块）
-/* 像素椭圆的边（双击跳时脚下散开的那一圈） */
-function pxEllipse(cx, cy, rx, ry, col){
-  ctx.fillStyle = col;
-  const n = Math.ceil(TAU * Math.max(rx, ry)), seen = new Set();
-  for (let i = 0; i < n; i++){
-    const a = i / n * TAU, x = Math.round(Math.cos(a) * rx), y = Math.round(Math.sin(a) * ry), key = x * 1000 + y;
-    if (seen.has(key)) continue;
-    seen.add(key); ctx.fillRect(cx + x, cy + y, 1, 1);
-  }
-}
