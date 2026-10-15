@@ -48,7 +48,7 @@ const Pomo = {
   },
   remaining(){ return this.t.running ? Math.max(0, this.t.endAt - Date.now()) : this.t.left; },
   elapsed(){ const t = this.t; return t.watchAcc + (t.running ? Date.now() - t.watchFrom : 0); },
-  /* 现在要显示的时间和进度（面板、沉浸模式、茶室挂轴都用它）：[「分:秒」, 0–1] */
+  /* 现在要显示的时间和进度（面板、沉浸模式、月洞窗旁的挂轴都用它）：[「分:秒」, 0–1] */
   display(){
     if (this.t.kind === 'watch'){ const ms = this.elapsed(), s = Math.floor(ms / 1000); return [`${pad2(Math.floor(s / 60))}:${pad2(s % 60)}`, (ms % 3600e3) / 3600e3]; }
     const left = this.remaining();
