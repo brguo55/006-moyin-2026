@@ -7,7 +7,7 @@
    分层（从远到近）：
      窗外远景（星海 + 庭院，跟着镜头只移动一半；白天 / 傍晚 / 夜里三张，按真实时间一格一格溶过去）+ 雨丝
      房子（静态：墙、地板、家具 —— 预先画好一整张；窗户是透明的，透出后面的远景；换节气时重画瓶花和小摆设）
-     会动的小东西（挂轴上的番茄钟、日历、音箱、屏幕里的雨、挂钟、茶的热气）
+     会动的小东西（挂轴上的番茄钟、日历、音箱、电脑屏幕里的雨、电子钟、茶的热气）
      人物（room.js 画）
      前景（红漆柱、垂下来的藤、大瓷瓶：比中景移动得快 → 景深）
      天光（夜里整个画面暗一点、灯笼亮起来；傍晚带点橘色）—— drawLights，最后叠上去
@@ -586,7 +586,9 @@ function drawWindowNook(tc){
 const TEAPOT_AT = [944, 446];             // 紫砂壶（热气从壶嘴往上飘）
 const POMO_SCROLL = [1212, 344, 26, 58];   // 番茄钟挂轴（x, y, 宽, 高）
 
-/* ---------- 电脑：任务板、挂钟、绣墩、翘头书案上的电脑（全息屏）、铜机柜、宫灯台灯；旁边两块板通往阁楼 ---------- */
+/* ---------- 电脑：任务板、电子钟、绣墩、翘头书案上的电脑（全息屏）、铜机柜、宫灯台灯；旁边两块板通往阁楼 ---------- */
+const ECLOCK = [1456, 318, 29, 15];       // 电子钟（x, y, 宽, 高）：时、分是 drawHouseLive 按真实时间画的
+const ECLOCK_DIGIT_X = [0, 4, 10, 14];    // 四个数字在屏上的位置（中间空出两点）
 function drawStudy(){
   // 任务板：木框 + 钉着的小纸条（红印）
   bevel(1350, 340, 50, 38, HC.wm, HC.wl, HC.wd);
@@ -594,9 +596,15 @@ function drawStudy(){
   for (const [x, y] of [[1357, 347], [1372, 352], [1385, 346], [1362, 361]]){
     boxO(x, y, 11, 10, HC.paper); rect(x + 2, y + 4, 7, 1, HC.paperDk); rect(x + 2, y + 6, 5, 1, HC.paperDk); rect(x + 7, y + 6, 2, 2, HC.red);
   }
-  // 挂钟（指针在 drawHouseLive 里按真实时间画）
-  disc(1470, 330, 11, OUTL); disc(1470, 330, 10, HC.wm); disc(1470, 330, 8, HC.paper);
-  for (const [dx, dy] of [[0, -7], [7, 0], [0, 7], [-7, 0]]) dot(1470 + dx, 330 + dy, OUTL);
+  // 电子钟：铜框、深色的屏，屏上是没亮的「88:88」（像真的数码管），右下角一颗小灯
+  {
+    const [x, y, w, h] = ECLOCK, x0 = x + ((w - 17) >> 1);
+    rect(x + 1, y + h, w, 1, 'rgba(60,40,30,0.25)');
+    bevel(x, y, w, h, HC.goldDk, HC.gold, '#7a5222');
+    rect(x + 2, y + 2, w - 4, h - 4, OUTL); rect(x + 3, y + 3, w - 6, h - 6, '#10261f');
+    for (const dx of ECLOCK_DIGIT_X) DIGITS[8].forEach((r, j) => { for (let k = 0; k < 3; k++) if (r[k] === '#') dot(x0 + dx + k, y + 5 + j, '#1c3a31'); });
+    dot(x + w - 3, y + h - 2, HC.jade);
+  }
   // 绣墩（能站：顶面 452）
   rect(1365, 452, 27, 18, OUTL); rect(1366, 453, 25, 16, HC.lac); rect(1366, 453, 25, 2, HC.gold); rect(1366, 467, 25, 2, HC.gold);
   for (let x = 1369; x < 1389; x += 5) rect(x, 458, 2, 6, HC.lacD);
@@ -611,6 +619,9 @@ function drawStudy(){
   // 全息屏（铜框，屏幕里的雨在 drawHouseLive 里画）+ 铜键盘、玉石、青瓷杯、宫灯台灯
   boxO(1419, 394, 37, 28, HC.goldDk); rect(1420, 395, 35, 1, HC.gold);
   rect(1422, 397, 31, 22, HC.jadeDk);
+  rect(1422, 397, 31, 2, HC.jade); for (const dx of [26, 28]) dot(1422 + dx, 397, HC.jadeLt);   // 屏上一个窗口：标题栏
+  for (const [dy, w] of [[3, 12], [5, 9], [7, 11]]) rect(1424, 397 + dy, w, 1, '#3f8c74');        // 几行字
+  boxO(1451, 432, 4, 3, HC.porc); dot(1452, 432, HC.goldDk);                                      // 鼠标
   boxO(1435, 422, 5, 10, HC.goldDk); boxO(1429, 431, 17, 4, HC.goldDk);
   boxO(1459, 431, 22, 4, HC.gold); for (let x = 1461; x < 1479; x += 2) dot(x, 432, HC.goldDk);
   boxO(1484, 432, 5, 3, HC.jade);
@@ -923,15 +934,18 @@ function drawHouseLive(g, t, ix, iy){
   const sx = X(1422), sy = Y(397);
   for (let i = 0; i < 10; i++){
     const rx = sx + 1 + ((i * 13) % 29), ry = sy + Math.floor((t * 24 + i * 11) % 26) - 3;
-    if (ry >= sy && ry + 2 < sy + 22) rect(rx, ry, 1, 2, HC.jadeLt);
+    if (ry >= sy + 9 && ry + 2 < sy + 22) rect(rx, ry, 1, 2, HC.jadeLt);
   }
   if ((t % 1) < 0.5) rect(sx + 3, sy + 17, 3, 1, HC.jadeLt);
-  // 挂钟：真实时间
-  const now = new Date(), cx = X(1470), cy = Y(330);
-  const hr = (now.getHours() % 12 + now.getMinutes() / 60) / 12 * TAU, mn = (now.getMinutes() + now.getSeconds() / 60) / 60 * TAU;
-  for (let i = 1; i <= 4; i++) dot(cx + Math.round(Math.sin(hr) * i), cy - Math.round(Math.cos(hr) * i), OUTL);
-  for (let i = 1; i <= 6; i++) dot(cx + Math.round(Math.sin(mn) * i), cy - Math.round(Math.cos(mn) * i), HC.wd);
-  dot(cx, cy, HC.red);
+  // 电子钟：真实的时、分，中间两点一秒闪一下
+  {
+    const [ex, ey, ew] = ECLOCK, x = X(ex), y = Y(ey);
+    if (x > -40 && x < 480 && y > -30 && y < 280){
+      const now = new Date(), txt = String(now.getHours()).padStart(2, '0') + String(now.getMinutes()).padStart(2, '0'), x0 = x + ((ew - 17) >> 1);
+      [...txt].forEach((ch, i) => DIGITS[ch].forEach((r, j) => { for (let k = 0; k < 3; k++) if (r[k] === '#') dot(x0 + ECLOCK_DIGIT_X[i] + k, y + 5 + j, HC.jadeLt); }));
+      if (now.getMilliseconds() < 500){ dot(x0 + 8, y + 6, HC.jadeLt); dot(x0 + 8, y + 8, HC.jadeLt); }
+    }
+  }
   // 铜机柜的小玉灯
   dot(X(1420), Y(446), (t % 2.4) < 2 ? HC.jadeLt : HC.jadeDk);
   // 茶的热气：一缕一缕往上飘
