@@ -6,8 +6,8 @@
    A / D 左右飘；空格跳（按得越久跳得越高），空中再按一次 = 二段跳；站在家具上按 S 下来；
    E 互动（旁边是什么就用什么：门口的控制面板 → 设置，日历 → 月历，音箱 → 声音）；W 先空着（以后进门 / 上楼梯）
    打瞌睡的时候这些键都不管用，要点他一下才醒
-   动画（sprites.js 的 RABBIT）：平时 idle_rabbit；番茄钟专注时 focus_rabbit_one（喝茶）
-   rabbit 左右两边长得不一样（一边衣服、一边机械），不能镜像，所以暂时一直朝右
+   动画（sprites.js 的 RABBIT）：待机、起跳、二段跳左右各一套；打瞌睡、被点、专注（喝茶 / 吃苹果）、拍手、伸懒腰只有朝右的，播之前先转成朝右
+   rabbit 左右两边长得不一样（一边衣服、一边机械），不能镜像
    家具的顶面都是「单向平台」：从下面能穿上去，从上面落下能站住（阁楼的木地板也是）
    镜头：平滑跟随 rabbit、朝他飘的方向多看一点、到地图边缘停住
    视差：窗外的景色移动得慢（远），前景的柱子 / 植物移动得快（近）→ 2.5D 的深度
@@ -146,7 +146,7 @@ const Room = {
   },
   /* 操控了 / 点醒了 rabbit：记下时间、醒过来；长休息开头的那个盹也不用打了 */
   _touched(){ this.lastInput = Date.now(); this.napT = -1; this.breakNap = false; },
-  /* E：互动 —— 看 rabbit 面前是什么。现在只有门口的控制面板：打开设置 */
+  /* E：互动 —— 用 rabbit 身边的那样东西（near：控制面板、日历、音箱，每帧在 update 里找） */
   interact(){ if (this.near) this._use(this.near); },
   /* 用一样东西：控制面板 → 设置（滴一声），日历 → 月历，音箱 → 声音（面板那边的函数） */
   _use(kind){
@@ -171,7 +171,7 @@ const Room = {
   },
   click(px, py){
     const who = this.hit(px, py);
-    if (who === 'panel' || who === 'calendar' || who === 'speaker') this._use(who);
+    if (THINGS.some(([kind]) => kind === who)) this._use(who);
     else if (who === 'rabbit'){
       // 被点一下：做个动作（click）+ 冒红色爱心；睡着时被点就是醒过来，这一下播完才能动
       const napping = this.napT >= 0;
