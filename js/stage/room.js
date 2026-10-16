@@ -39,12 +39,30 @@ const FG_PAR = 0.3, FAR_PAR = 0.5;     // 前景比中景多移动 30%；窗外�
 const NAP_MIN = 3;                     // 默认多少分钟没操控 rabbit，他就打瞌睡（设置 → 小房子 里能改，0 = 不睡）；按真实时间算，切到别的窗口也照样计时
 
 /* ---------- 能站的面（单向平台）----------
-   都按像素坐标写（和 house.js 的画对得上：[x0, x1, 顶面 y]），存成世界坐标（× PX） */
+   都按像素坐标写（[x0, x1, 顶面 y]），存成世界坐标（× PX）。
+   家具的位置只写在这里：house.js 照着这些数画（挪一样东西，改这里一处就行） */
 const PLATS = [];
 const plat = (name, x0, x1, y) => { const p = { name, x0: x0 * PX, x1: x1 * PX, y: y * PX }; PLATS.push(p); return p; };
-const SHELF_A = [226, 268, 418], SHELF_B = [196, 254, 374];   // 门口：鞋凳上面的两块置物板（下面那块摆着跟着节气换的小东西）
+// 门口
+const SHOE_BENCH = [165, 215, 456];                           // 鞋凳
+const SHELF_A = [226, 268, 418], SHELF_B = [196, 254, 374];   // 鞋凳上面的两块置物板（下面那块摆着跟着节气换的小东西）
 const SPEAKER_SHELF = [44, 104, 152];                         // 左上角：音箱下面那块（站在上面按 E 开音箱）
-const BOOKCASES = [[442, 542, 400], [550, 678, 326]];   // 书架：两个书柜，一矮一高（顶面能站）
+// 书架
+const STEP_STOOL = [446, 472, 450];                           // 踏凳
+const BOOKCASES = [[442, 542, 400], [550, 678, 326]];         // 两个书柜，一矮一高（顶面能站）
+// 窗户
+const TEA_TABLE = [712, 765, 455];                            // 茶桌
+const MOON = [880, 366, 48];                                  // 月洞窗：圆心 x、y，半径；下面的窗台 x ± 56、顶面 = 圆心 y + 54
+// 电脑
+const DRUM_STOOL = [1073, 1100, 452];                         // 绣墩
+const DESK = [1110, 1227, 435];                               // 书案（电脑、台灯摆在上面）
+const LOFT_STEPS = [[1234, 1286, 392], [1234, 1286, 348]];    // 书案旁边两块板叠着，再二段跳就上阁楼
+const CABINET = [1380, 1440, 420];                            // 抽屉柜
+const LATTICE = [1480, 340, 84, 76];                          // 格子窗（x, y, 宽, 高）；窗台比窗框左右各宽 6、顶面 = y + 高
+// 阁楼
+const CHESTS = [[1084, 1115, 260], [1114, 1141, 240]];        // 两个樟木箱，一矮一高
+const WARDROBE = [1424, 1476, 200];                           // 衣柜
+const BED = [1575, 1680, 260];                                // 床
 /* 练功的架子（house.js 照着画木板）：不多放，一块和一块之间要二段跳才上得去，像练功 */
 const TRAIN = [
   [200, 256, 300], [120, 176, 226], SPEAKER_SHELF,   // 门口：从下面那块置物板，三下二段跳爬到左上角的音箱
@@ -52,22 +70,21 @@ const TRAIN = [
   [712, 768, 384], [730, 786, 312],                  // 窗户左边：从茶桌往上
 ];
 plat('阁楼', MEZZ_X0 / PX, WALL_R / PX, MEZZ_Y / PX);
-plat('鞋凳', 165, 215, 456);
+plat('鞋凳', ...SHOE_BENCH);
 plat('置物板', ...SHELF_A);
 plat('置物板', ...SHELF_B);
-plat('踏凳', 446, 472, 450);
+plat('踏凳', ...STEP_STOOL);
 for (const b of BOOKCASES) plat('书柜', ...b);
-plat('茶几', 712, 765, 455);
-plat('窗台', 824, 936, 420);                // 月洞窗
-plat('绣墩', 1073, 1100, 452);
-plat('书桌', 1110, 1227, 435);
-for (const y of [392, 348]) plat('置物板', 1234, 1286, y);   // 电脑旁边：两块板叠着，再二段跳就上阁楼
-plat('抽屉柜', 1380, 1440, 420);
-plat('窗台', 1474, 1570, 416);              // 格子窗
-plat('樟木箱', 1084, 1115, 260);
-plat('樟木箱', 1114, 1141, 240);
-plat('衣柜', 1424, 1476, 200);
-plat('床', 1575, 1680, 260);
+plat('茶几', ...TEA_TABLE);
+plat('窗台', MOON[0] - 56, MOON[0] + 56, MOON[1] + 54);
+plat('绣墩', ...DRUM_STOOL);
+plat('书桌', ...DESK);
+for (const s of LOFT_STEPS) plat('置物板', ...s);
+plat('抽屉柜', ...CABINET);
+plat('窗台', LATTICE[0] - 6, LATTICE[0] + LATTICE[2] + 6, LATTICE[1] + LATTICE[3]);
+for (const c of CHESTS) plat('樟木箱', ...c);
+plat('衣柜', ...WARDROBE);
+plat('床', ...BED);
 for (const t of TRAIN) plat('架子', ...t);
 
 const Room = {
