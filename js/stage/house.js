@@ -64,33 +64,36 @@ const PROPS = {
   dummy:          { name: '木人桩', at: [300, 388], size: [39, 82] },
   control_panel:  { name: '控制面板（屏上的齿轮、指示灯由程序画）', at: [150, 408], size: [16, 21] },
   plaque:         { name: '匾（连两根吊绳）', at: [190, 19], size: [86, 42] },
-  bamboo_painting:{ name: '竹子画挂轴', at: [1280, 37], size: [38, 122] },
+  bamboo_painting:{ name: '竹子画挂轴', at: [986, 37], size: [38, 122] },
   speaker:        { name: '音箱（连两根铜链；放声音时的音符、指示灯由程序画）', at: [26, 10], size: [26, 46] },
-  fan_window:     { name: '扇面窗（玻璃留透明）', at: [354, 100], size: [89, 49], window: true },
-  bookcase_1:     { name: '书柜 1（矮的那个，顶面能站）', at: [468, 410], size: [92, 60] },
-  bookcase_2:     { name: '书柜 2（高的那个，顶面能站）', at: [566, 370], size: [104, 100] },
-  step_stool:     { name: '踏凳（顶面能站）', at: [474, 450], size: [26, 20] },
-  star_chart:     { name: '星图手卷', at: [687, 92], size: [71, 45] },
-  moon_window:    { name: '月洞窗和窗台（玻璃留透明，窗台能站）', at: [1064, 311], size: [112, 118], window: true },
+  fan_window:     { name: '扇面窗（玻璃留透明）', at: [286, 100], size: [89, 49], window: true },
+  bookcase_1:     { name: '书柜 1（矮的那个，顶面能站）', at: [442, 400], size: [100, 70] },
+  bookcase_2:     { name: '书柜 2（高的那个，顶面能站）', at: [550, 326], size: [128, 144] },
+  step_stool:     { name: '踏凳（顶面能站）', at: [446, 450], size: [26, 20] },
+  star_chart:     { name: '星图手卷', at: [597, 92], size: [71, 45] },
+  moon_window:    { name: '月洞窗和窗台（玻璃留透明，窗台能站）', at: [824, 311], size: [112, 118], window: true },
   lantern:        { name: '灯笼（三盏用同一张；吊绳、墙钩由程序画；夜里的光由程序画）', size: [17, 27] },
-  pomo_scroll:    { name: '番茄钟挂轴（上面的数字和进度由程序画）', at: [1208, 337], size: [34, 68] },
-  tea_table:      { name: '茶桌、紫砂壶、两个杯子（顶面能站；热气由程序画）', at: [925, 446], size: [53, 24] },
-  vase:           { name: '青花大瓶（插的花跟着节气换，由程序画）', at: [992, 448], size: [17, 22] },
-  task_board:     { name: '任务板', at: [1350, 340], size: [50, 38] },
-  e_clock:        { name: '电子钟（数字由程序画，屏要留深色）', at: [1456, 318], size: [30, 16] },
-  drum_stool:     { name: '绣墩（顶面能站）', at: [1365, 452], size: [27, 18] },
-  desk:           { name: '翘头书案、抽屉、桌下的铜机柜（顶面能站；机柜的小灯由程序画）', at: [1400, 433], size: [121, 37] },
-  computer:       { name: '电脑（屏、支架、键盘、鼠标；屏里的雨和光标由程序画）', at: [1419, 394], size: [62, 41] },
-  desk_things:    { name: '书案上的玉石和青瓷杯', at: [1484, 428], size: [17, 7] },
-  desk_lamp:      { name: '宫灯台灯（夜里的光由程序画）', at: [1501, 409], size: [15, 26] },
-  lattice_window: { name: '格子窗和窗台（玻璃留透明，窗台能站）', at: [1594, 334], size: [96, 89], window: true },
-  palace_lantern: { name: '落地宫灯（夜里的光由程序画）', at: [1699, 398], size: [23, 72] },
-  cushions:       { name: '两个蒲团', at: [1630, 462], size: [51, 8] },
+  pomo_scroll:    { name: '番茄钟挂轴（上面的数字和进度由程序画）', at: [968, 337], size: [34, 68] },
+  tea_table:      { name: '茶桌、紫砂壶、两个杯子（顶面能站；热气由程序画）', at: [712, 446], size: [53, 24] },
+  vase:           { name: '青花大瓶（插的花跟着节气换，由程序画）', at: [779, 448], size: [17, 22] },
+  task_board:     { name: '任务板', at: [1058, 340], size: [50, 38] },
+  e_clock:        { name: '电子钟（数字由程序画，屏要留深色）', at: [1164, 318], size: [30, 16] },
+  drum_stool:     { name: '绣墩（顶面能站）', at: [1073, 452], size: [27, 18] },
+  desk:           { name: '翘头书案、抽屉、桌下的铜机柜（顶面能站；机柜的小灯由程序画）', at: [1108, 433], size: [121, 37] },
+  computer:       { name: '电脑（屏、支架、键盘、鼠标；屏里的雨和光标由程序画）', at: [1127, 394], size: [62, 41] },
+  desk_things:    { name: '书案上的玉石和青瓷杯', at: [1192, 428], size: [17, 7] },
+  desk_lamp:      { name: '宫灯台灯（夜里的光由程序画）', at: [1209, 409], size: [15, 26] },
+  armillary:      { name: '浑天仪（铜座、三道铜环、玉色小球）', at: [1320, 406], size: [31, 64] },
+  cabinet:        { name: '抽屉柜（顶面能站）', at: [1380, 397], size: [60, 73] },
+  lattice_window: { name: '格子窗和窗台（玻璃留透明，窗台能站）', at: [1474, 334], size: [96, 89], window: true },
+  palace_lantern: { name: '落地宫灯（夜里的光由程序画）', at: [1659, 398], size: [23, 72] },
+  cushions:       { name: '两个蒲团', at: [1490, 462], size: [51, 8] },
   bamboo_pot:     { name: '青花盆里的竹子', at: [1736, 394], size: [25, 76] },
-  railing:        { name: '阁楼的栏杆', at: [1340, 257], size: [34, 23] },
+  railing:        { name: '阁楼的栏杆', at: [1040, 257], size: [34, 23] },
+  wardrobe:       { name: '衣柜（顶面能站）', at: [1422, 200], size: [56, 80] },
   bed:            { name: '木床（顶面能站）', at: [1571, 224], size: [113, 56] },
-  chests:         { name: '两个樟木箱（顶面能站）', at: [1384, 240], size: [57, 40] },
-  round_window:   { name: '阁楼的小圆窗（玻璃留透明）', at: [1459, 149], size: [63, 63], window: true },
+  chests:         { name: '两个樟木箱（顶面能站）', at: [1084, 240], size: [57, 40] },
+  round_window:   { name: '阁楼的小圆窗（玻璃留透明）', at: [1269, 149], size: [63, 63], window: true },
   loft_window:    { name: '阁楼床上方的格子窗（玻璃留透明）', at: [1584, 144], size: [88, 73], window: true },
 };
 const PROP_ART = [];   // 已经有老师画的图的摆设 id（图放在 assets/house/；也要加进 sw.js 的 SHELL，断网时才有）
@@ -195,12 +198,12 @@ function bricks(x, y, w, h){
   }
 }
 /* 四块的分界（像素 x）：门口 | 书架 | 窗户 | 电脑（上面是阁楼） */
-const ZONES = [A_WL, 460, 900, A_MX, A_WR];
+const ZONES = [A_WL, 420, 700, A_MX, A_WR];
 /* 窗户 */
-const FAN = [398, 150, 44, 14];                 // 门口上面的扇面窗：圆心 x、y，外半径、内半径（开口朝上，左右各张开 60°）
-const MOON = [1120, 366, 48];                   // 月洞窗：圆心 x、y，半径
-const LATTICE = [1600, 340, 84, 76];            // 电脑旁边的格子窗（x, y, 宽, 高）
-const ROUND = [1490, 180, 26];                  // 阁楼的小圆窗
+const FAN = [330, 150, 44, 14];                 // 门口上面的扇面窗：圆心 x、y，外半径、内半径（开口朝上，左右各张开 60°）
+const MOON = [880, 366, 48];                    // 月洞窗：圆心 x、y，半径
+const LATTICE = [1480, 340, 84, 76];            // 电脑旁边的格子窗（x, y, 宽, 高）
+const ROUND = [1300, 180, 26];                  // 阁楼的小圆窗
 const LOFT_WIN = [1590, 150, 76, 60];           // 阁楼床上方的格子窗
 /* 窗户透明区域的外接框（x, y, 宽, 高）：镜头里一个都没有时就不画远景 */
 const WINDOWS = [[MOON[0] - MOON[2], MOON[1] - MOON[2], MOON[2] * 2 + 1, MOON[2] * 2 + 1], LATTICE,
@@ -483,7 +486,7 @@ function bambooScroll(x, y, w, h){
 const TRAIN_ITEMS = { 0: 'bonsai', 3: 'books', 4: 'bell', 6: 'books' };   // 第几块板上摆什么
 function drawTraining(){
   prop('plaque', () => plaque(190, 40));
-  prop('bamboo_painting', () => bambooScroll(1284, 44, 30, 112));
+  prop('bamboo_painting', () => bambooScroll(990, 44, 30, 112));
   TRAIN.forEach(([x0, x1, y], i) => wallShelf(x0, x1, y, TRAIN_ITEMS[i]));
   prop('speaker', () => {
     const [x, y, w, h] = SPEAKER;
@@ -613,9 +616,9 @@ function drawLibrary(){
   BOOKCASES.forEach(([x0, x1, top], i) => prop('bookcase_' + (i + 1), () => curioShelf(x0, x1, top, i * 3 + 1)));   // 两个书柜，格子里放着书、瓷瓶、盆景、书匣
   // 踏凳（能站：顶面 450）：先踩它，再一级一级跳上书柜
   prop('step_stool', () => {
-    bevel(474, 450, 26, 4, HC.wl, HC.wh, HC.wd);
-    for (const x of [476, 494]) boxO(x, 454, 4, 16, HC.wd);
-    rect(478, 461, 18, 2, HC.wd);
+    bevel(446, 450, 26, 4, HC.wl, HC.wh, HC.wd);
+    for (const x of [448, 466]) boxO(x, 454, 4, 16, HC.wd);
+    rect(450, 461, 18, 2, HC.wd);
   });
   // 书柜顶上：一个青花瓶、一摞书
   art(VASE, VASE_PAL, BOOKCASES[0][0] + 6, BOOKCASES[0][2] - 8);
@@ -624,7 +627,7 @@ function drawLibrary(){
   prop('star_chart', starChart);
 }
 function starChart(){
-  const x = 690, y = 92, w = 65, h = 45;
+  const x = 600, y = 92, w = 65, h = 45;
   rect(x - 3, y, 3, h, HC.wdk); rect(x + w, y, 3, h, HC.wdk);
   boxO(x, y, w, h, HC.paper); rect(x + 1, y + h - 2, w - 2, 1, HC.paperDk);
   const stars = [[8, 10], [16, 16], [26, 12], [34, 22], [44, 18], [52, 30], [20, 32], [30, 36]];
@@ -635,7 +638,7 @@ function starChart(){
 }
 
 /* ---------- 窗户：月洞窗（窗台能站）、两边各一盏灯笼、番茄钟挂轴、茶桌、地毯、跟着节气换花的青花瓶 ---------- */
-const LANTERNS = [[1062, 334], [1178, 334], [1540, 152]];   // 灯笼（顶端位置）：月洞窗两边各一盏、阁楼一盏
+const LANTERNS = [[822, 334], [938, 334], [1360, 152]];   // 灯笼（顶端位置）：月洞窗两边各一盏、阁楼一盏
 /* hook：挂在哪（默认从屋顶的梁上一根长绳吊下来；给了 y 就挂在墙上的一个小铜钩上） */
 function lanternArt(cx, top, hook){
   const from = hook || A_CE + 9;
@@ -655,37 +658,37 @@ function lanternBody(cx, top){
 }
 function drawWindowNook(tc){
   // 地毯（主题色 + 金边）
-  rect(905, 467, 120, 3, OUTL); rect(906, 467, 118, 2, tc.rug); rect(906, 468, 118, 1, tc.rugDk);
-  for (let x = 909; x < 1023; x += 5) dot(x, 467, HC.gold);
-  for (const x of [902, 1025]) for (let y = 467; y < 470; y += 2) rect(x, y, 3, 1, HC.gold);
+  rect(708, 467, 106, 3, OUTL); rect(709, 467, 104, 2, tc.rug); rect(709, 468, 104, 1, tc.rugDk);
+  for (let x = 712; x < 812; x += 5) dot(x, 467, HC.gold);
+  for (const x of [705, 814]) for (let y = 467; y < 470; y += 2) rect(x, y, 3, 1, HC.gold);
   for (const [cx, top] of LANTERNS.slice(0, 2)) lanternArt(cx, top, top - 12);   // 挂在月洞窗两边的墙钩上
   // 番茄钟挂轴（倒计时数字在 drawHouseLive 里画）
   prop('pomo_scroll', () => scroll(POMO_SCROLL[0], POMO_SCROLL[1], POMO_SCROLL[2], POMO_SCROLL[3]));
   // 茶桌 + 紫砂壶 + 两个杯子
   prop('tea_table', () => {
-  bevel(925, 455, 53, 4, HC.wl, HC.wh, HC.wd);
-  boxO(927, 459, 49, 3, HC.wd);
-  for (const x of [930, 969]) boxO(x, 461, 4, 9, HC.wd);
+  bevel(712, 455, 53, 4, HC.wl, HC.wh, HC.wd);
+  boxO(714, 459, 49, 3, HC.wd);
+  for (const x of [717, 756]) boxO(x, 461, 4, 9, HC.wd);
   art(TEAPOT, TEAPOT_PAL, TEAPOT_AT[0], TEAPOT_AT[1]);
-  boxO(932, 450, 5, 5, HC.celadon);
-  boxO(963, 450, 5, 5, HC.porc);
+  boxO(719, 450, 5, 5, HC.celadon);
+  boxO(750, 450, 5, 5, HC.porc);
   });
   // 青花大瓶，插的花跟着节气换
-  prop('vase', () => { for (let j = 0; j < 22; j++){ const w = [3, 3, 4, 5, 6, 7, 7, 7, 7, 7, 7, 6, 6, 5, 5, 5, 5, 5, 6, 6, 5, 4][j]; rect(1000 - w - 1, 448 + j, w * 2 + 3, 1, OUTL); rect(1000 - w, 448 + j, w * 2 + 1, 1, j % 7 === 3 ? HC.blue : HC.porc); } });
-  seasonVase(1000, 448);
+  prop('vase', () => { for (let j = 0; j < 22; j++){ const w = [3, 3, 4, 5, 6, 7, 7, 7, 7, 7, 7, 6, 6, 5, 5, 5, 5, 5, 6, 6, 5, 4][j]; rect(787 - w - 1, 448 + j, w * 2 + 3, 1, OUTL); rect(787 - w, 448 + j, w * 2 + 1, 1, j % 7 === 3 ? HC.blue : HC.porc); } });
+  seasonVase(787, 448);
 }
-const TEAPOT_AT = [944, 446];             // 紫砂壶（热气从壶嘴往上飘）
-const POMO_SCROLL = [1212, 344, 26, 58];   // 番茄钟挂轴（x, y, 宽, 高）
+const TEAPOT_AT = [731, 446];             // 紫砂壶（热气从壶嘴往上飘）
+const POMO_SCROLL = [972, 344, 26, 58];    // 番茄钟挂轴（x, y, 宽, 高）
 
 /* ---------- 电脑：任务板、电子钟、绣墩、翘头书案上的电脑（全息屏）、铜机柜、宫灯台灯；旁边两块板通往阁楼 ---------- */
-const ECLOCK = [1456, 318, 29, 15];       // 电子钟（x, y, 宽, 高）：时、分是 drawHouseLive 按真实时间画的
+const ECLOCK = [1164, 318, 29, 15];       // 电子钟（x, y, 宽, 高）：时、分是 drawHouseLive 按真实时间画的
 const ECLOCK_DIGIT_X = [0, 4, 10, 14];    // 四个数字在屏上的位置（中间空出两点）
 function drawStudy(){
   // 任务板：木框 + 钉着的小纸条（红印）
   prop('task_board', () => {
-  bevel(1350, 340, 50, 38, HC.wm, HC.wl, HC.wd);
-  rect(1353, 343, 44, 32, '#e6cfa6'); dither(1353, 343, 44, 32, '#d8bd8e');
-  for (const [x, y] of [[1357, 347], [1372, 352], [1385, 346], [1362, 361]]){
+  bevel(1058, 340, 50, 38, HC.wm, HC.wl, HC.wd);
+  rect(1061, 343, 44, 32, '#e6cfa6'); dither(1061, 343, 44, 32, '#d8bd8e');
+  for (const [x, y] of [[1065, 347], [1080, 352], [1093, 346], [1070, 361]]){
     boxO(x, y, 11, 10, HC.paper); rect(x + 2, y + 4, 7, 1, HC.paperDk); rect(x + 2, y + 6, 5, 1, HC.paperDk); rect(x + 7, y + 6, 2, 2, HC.red);
   }
   });
@@ -700,52 +703,81 @@ function drawStudy(){
   });
   // 绣墩（能站：顶面 452）
   prop('drum_stool', () => {
-  rect(1365, 452, 27, 18, OUTL); rect(1366, 453, 25, 16, HC.lac); rect(1366, 453, 25, 2, HC.gold); rect(1366, 467, 25, 2, HC.gold);
-  for (let x = 1369; x < 1389; x += 5) rect(x, 458, 2, 6, HC.lacD);
+  rect(1073, 452, 27, 18, OUTL); rect(1074, 453, 25, 16, HC.lac); rect(1074, 453, 25, 2, HC.gold); rect(1074, 467, 25, 2, HC.gold);
+  for (let x = 1077; x < 1097; x += 5) rect(x, 458, 2, 6, HC.lacD);
   });
   // 翘头书案（能站：顶面 435）+ 抽屉
   prop('desk', () => {
-  bevel(1402, 435, 117, 5, HC.wl, HC.wh, HC.wd);
-  rect(1400, 433, 4, 3, OUTL); rect(1517, 433, 4, 3, OUTL); dot(1401, 434, HC.wl); dot(1519, 434, HC.wl);
-  boxO(1405, 440, 5, 30, HC.wd); boxO(1512, 440, 5, 30, HC.wd);
-  bevel(1457, 440, 55, 13, HC.wm, HC.wl, HC.wd); rect(1480, 445, 9, 3, OUTL); rect(1481, 446, 7, 1, HC.gold);
+  bevel(1110, 435, 117, 5, HC.wl, HC.wh, HC.wd);
+  rect(1108, 433, 4, 3, OUTL); rect(1225, 433, 4, 3, OUTL); dot(1109, 434, HC.wl); dot(1227, 434, HC.wl);
+  boxO(1113, 440, 5, 30, HC.wd); boxO(1220, 440, 5, 30, HC.wd);
+  bevel(1165, 440, 55, 13, HC.wm, HC.wl, HC.wd); rect(1188, 445, 9, 3, OUTL); rect(1189, 446, 7, 1, HC.gold);
   // 铜机柜（桌下）
-  bevel(1414, 441, 14, 29, HC.goldDk, HC.gold, '#7a5222');
-  for (let y = 452; y < 466; y += 3) rect(1417, y, 8, 1, '#7a5222');
+  bevel(1122, 441, 14, 29, HC.goldDk, HC.gold, '#7a5222');
+  for (let y = 452; y < 466; y += 3) rect(1125, y, 8, 1, '#7a5222');
   });
   // 电脑：全息屏（铜框，屏幕里的雨在 drawHouseLive 里画）+ 铜键盘、鼠标；玉石、青瓷杯；宫灯台灯
   prop('computer', () => {
-  boxO(1419, 394, 37, 28, HC.goldDk); rect(1420, 395, 35, 1, HC.gold);
-  rect(1422, 397, 31, 22, HC.jadeDk);
-  rect(1422, 397, 31, 2, HC.jade); for (const dx of [26, 28]) dot(1422 + dx, 397, HC.jadeLt);   // 屏上一个窗口：标题栏
-  for (const [dy, w] of [[3, 12], [5, 9], [7, 11]]) rect(1424, 397 + dy, w, 1, '#3f8c74');        // 几行字
-  boxO(1451, 432, 4, 3, HC.porc); dot(1452, 432, HC.goldDk);                                      // 鼠标
-  boxO(1435, 422, 5, 10, HC.goldDk); boxO(1429, 431, 17, 4, HC.goldDk);
-  boxO(1459, 431, 22, 4, HC.gold); for (let x = 1461; x < 1479; x += 2) dot(x, 432, HC.goldDk);
+  boxO(1127, 394, 37, 28, HC.goldDk); rect(1128, 395, 35, 1, HC.gold);
+  rect(1130, 397, 31, 22, HC.jadeDk);
+  rect(1130, 397, 31, 2, HC.jade); for (const dx of [26, 28]) dot(1130 + dx, 397, HC.jadeLt);   // 屏上一个窗口：标题栏
+  for (const [dy, w] of [[3, 12], [5, 9], [7, 11]]) rect(1132, 397 + dy, w, 1, '#3f8c74');        // 几行字
+  boxO(1159, 432, 4, 3, HC.porc); dot(1160, 432, HC.goldDk);                                      // 鼠标
+  boxO(1143, 422, 5, 10, HC.goldDk); boxO(1137, 431, 17, 4, HC.goldDk);
+  boxO(1167, 431, 22, 4, HC.gold); for (let x = 1169; x < 1187; x += 2) dot(x, 432, HC.goldDk);
   });
   prop('desk_things', () => {
-  boxO(1484, 432, 5, 3, HC.jade);
-  boxO(1493, 428, 6, 7, HC.celadon); rect(1499, 430, 2, 1, OUTL); rect(1500, 431, 1, 2, OUTL); rect(1499, 433, 2, 1, OUTL);
+  boxO(1192, 432, 5, 3, HC.jade);
+  boxO(1201, 428, 6, 7, HC.celadon); rect(1207, 430, 2, 1, OUTL); rect(1208, 431, 1, 2, OUTL); rect(1207, 433, 2, 1, OUTL);
   });
   prop('desk_lamp', () => {
-  boxO(1503, 431, 11, 4, HC.wdk); rect(1507, 420, 2, 11, OUTL);
-  rect(1502, 410, 13, 11, OUTL); rect(1503, 411, 11, 9, HC.lanternLt); rect(1503, 414, 11, 1, HC.lantern); rect(1503, 418, 11, 1, HC.lantern);
-  rect(1501, 409, 15, 2, HC.wdk);
+  boxO(1211, 431, 11, 4, HC.wdk); rect(1215, 420, 2, 11, OUTL);
+  rect(1210, 410, 13, 11, OUTL); rect(1211, 411, 11, 9, HC.lanternLt); rect(1211, 414, 11, 1, HC.lantern); rect(1211, 418, 11, 1, HC.lantern);
+  rect(1209, 409, 15, 2, HC.wdk);
   });
-  for (const y of [392, 348]) wallShelf(1526, 1578, y, y === 392 ? 'books' : null);
+  for (const y of [392, 348]) wallShelf(1234, 1286, y, y === 392 ? 'books' : null);
+  prop('armillary', () => armillary(1335, A_FL));
+  prop('cabinet', () => drawerCabinet(1380, 1440, 420));
+}
+/* 浑天仪：铜座、立柱，一个正圆的铜环、一横一竖两个扁圆的环，中间一颗玉色小球，顶上一颗铜珠。x：中心，y：底 */
+function armillary(x, y){
+  bevel(x - 12, y - 6, 25, 6, HC.goldDk, HC.gold, '#7a5222');
+  rect(x - 7, y - 9, 15, 3, '#7a5222'); rect(x - 6, y - 9, 13, 1, HC.goldDk);
+  rect(x - 1, y - 30, 3, 21, '#7a5222'); rect(x, y - 30, 1, 21, HC.gold);
+  const cx = x, cy = y - 46;
+  ring(cx, cy, 15, '#7a5222'); ring(cx, cy, 14, HC.gold);
+  for (let a = 0; a < TAU; a += 0.02) dot(cx + Math.round(Math.cos(a) * 14), cy + Math.round(Math.sin(a) * 5), HC.goldDk);
+  for (let a = 0; a < TAU; a += 0.02) dot(cx + Math.round(Math.cos(a) * 5), cy + Math.round(Math.sin(a) * 14), HC.goldLt);
+  disc(cx, cy, 4, HC.jadeDk); disc(cx, cy, 3, HC.jade); dot(cx - 1, cy - 1, HC.jadeLt);
+  rect(cx - 1, cy - 18, 3, 3, HC.gold); dot(cx, cy - 18, HC.goldLt);
+}
+/* 抽屉柜：上面一块板（能站），四个带铜拉手的抽屉，两只脚；柜顶一个青瓷小瓶插着梅枝 */
+function drawerCabinet(x0, x1, top){
+  const w = x1 - x0;
+  bevel(x0, top, w, 4, HC.wl, HC.wh, HC.wd);
+  boxO(x0 + 2, top + 4, w - 4, A_FL - top - 12, HC.wm);
+  const dw = (w - 12) >> 1;
+  for (const [dx, dy] of [[5, 7], [7 + dw, 7], [5, 25], [7 + dw, 25]]){
+    bevel(x0 + dx, top + dy, dw, 16, HC.wd, HC.wm, HC.wdk);
+    rect(x0 + dx + (dw >> 1) - 2, top + dy + 7, 5, 2, HC.gold); dot(x0 + dx + (dw >> 1), top + dy + 7, HC.goldLt);
+  }
+  for (const lx of [x0 + 4, x1 - 8]) boxO(lx, A_FL - 8, 4, 8, HC.wd);
+  boxO(x1 - 15, top - 9, 7, 9, HC.celadon); rect(x1 - 13, top - 8, 1, 6, '#c8e0d2');
+  twig([[x1 - 12, top - 9], [x1 - 15, top - 18], [x1 - 20, top - 22]], HC.wdk); twig([[x1 - 14, top - 15], [x1 - 9, top - 21]], HC.wdk);
+  for (const [px, py] of [[-20, -23], [-16, -19], [-9, -22], [-13, -14]]) bloom(x1 + px, top + py, HC.pink, HC.pinkLt, HC.pinkDk);
 }
 
 /* ---------- 右边：格子窗旁的宫灯、两个蒲团、大青花盆里的竹子 ---------- */
 function drawRightEnd(){
   prop('palace_lantern', () => {
-  boxO(1701, 466, 19, 4, HC.wdk);
-  rect(1709, 420, 3, 46, OUTL); rect(1710, 420, 1, 46, HC.wm);
-  rect(1699, 398, 23, 2, HC.wdk); rect(1701, 400, 19, 20, OUTL);
-  rect(1702, 401, 17, 18, HC.lanternLt); rect(1702, 401, 1, 18, HC.lantern); rect(1718, 401, 1, 18, HC.lantern);
-  rect(1709, 401, 1, 18, HC.wl); rect(1702, 409, 17, 1, HC.wl);
-  rect(1699, 419, 23, 2, HC.wdk); for (const x of [1700, 1720]) { rect(x, 421, 1, 5, HC.red); }
+  boxO(1661, 466, 19, 4, HC.wdk);
+  rect(1669, 420, 3, 46, OUTL); rect(1670, 420, 1, 46, HC.wm);
+  rect(1659, 398, 23, 2, HC.wdk); rect(1661, 400, 19, 20, OUTL);
+  rect(1662, 401, 17, 18, HC.lanternLt); rect(1662, 401, 1, 18, HC.lantern); rect(1678, 401, 1, 18, HC.lantern);
+  rect(1669, 401, 1, 18, HC.wl); rect(1662, 409, 17, 1, HC.wl);
+  rect(1659, 419, 23, 2, HC.wdk); for (const x of [1660, 1680]) { rect(x, 421, 1, 5, HC.red); }
   });
-  prop('cushions', () => { for (const [x, w] of [[1630, 27], [1657, 24]]){
+  prop('cushions', () => { for (const [x, w] of [[1490, 27], [1517, 24]]){
     rect(x + 2, 462, w - 4, 8, OUTL); rect(x, 464, w, 6, OUTL); rect(x + 1, 465, w - 2, 4, HC.straw); rect(x + 3, 463, w - 6, 2, HC.straw);
     for (let k = x + 3; k < x + w - 3; k += 3) dot(k, 466, HC.strawDk);
   } });
@@ -759,6 +791,17 @@ function drawRightEnd(){
   });
 }
 
+/* 衣柜：朱漆的两扇门、中间一对圆铜面叶和拉手，上面一道檐（能站），四只矮脚 */
+function wardrobe(x, y, w, h){
+  bevel(x - 2, y, w + 4, 5, HC.wm, HC.wl, HC.wd);
+  boxO(x, y + 5, w, h - 9, HC.lac);
+  const mid = x + (w >> 1);
+  for (const dx of [3, (w >> 1) + 2]){ rect(x + dx, y + 8, (w >> 1) - 5, h - 16, HC.lacD); rect(x + dx + 1, y + 9, (w >> 1) - 7, h - 18, HC.lac); }
+  rect(mid, y + 6, 1, h - 11, OUTL);
+  for (const cy of [y + 30, y + 52]){ disc(mid - 4, cy, 3, HC.gold); disc(mid + 4, cy, 3, HC.gold); dot(mid - 4, cy, HC.goldDk); dot(mid + 4, cy, HC.goldDk); }
+  rect(mid - 2, y + 40, 1, 6, HC.goldLt); rect(mid + 2, y + 40, 1, 6, HC.goldLt);
+  for (const fx of [x + 2, x + w - 6]) boxO(fx, y + h - 4, 4, 4, HC.wdk);
+}
 /* ---------- 阁楼：木地板（能站）、朱漆栏杆、木床、樟木箱、灯笼、一摞线装书、小地毯 ---------- */
 function drawMezzanine(tc){
   bevel(A_MX, A_MZ, A_WR - A_MX, 8, HC.wm, HC.wl, HC.wd);
@@ -783,18 +826,20 @@ function drawMezzanine(tc){
   });
   // 樟木箱（能站：顶面 260 / 240）
   prop('chests', () => {
-  bevel(1384, 260, 31, 20, HC.wm, HC.wl, HC.wd); rect(1385, 266, 29, 1, HC.wd);
-  for (const [x, y] of [[1385, 261], [1411, 261], [1385, 276], [1411, 276]]) rect(x, y, 3, 3, HC.gold);
-  rect(1397, 264, 5, 4, HC.gold);
-  bevel(1414, 240, 27, 40, HC.lac, HC.lacL, HC.lacD); rect(1415, 247, 25, 1, HC.lacD);
-  for (const [x, y] of [[1415, 241], [1437, 241], [1415, 276], [1437, 276]]) rect(x, y, 3, 3, HC.gold);
-  rect(1425, 252, 5, 5, HC.gold); dot(1427, 254, HC.goldDk);
+  bevel(1084, 260, 31, 20, HC.wm, HC.wl, HC.wd); rect(1085, 266, 29, 1, HC.wd);
+  for (const [x, y] of [[1085, 261], [1111, 261], [1085, 276], [1111, 276]]) rect(x, y, 3, 3, HC.gold);
+  rect(1097, 264, 5, 4, HC.gold);
+  bevel(1114, 240, 27, 40, HC.lac, HC.lacL, HC.lacD); rect(1115, 247, 25, 1, HC.lacD);
+  for (const [x, y] of [[1115, 241], [1137, 241], [1115, 276], [1137, 276]]) rect(x, y, 3, 3, HC.gold);
+  rect(1125, 252, 5, 5, HC.gold); dot(1127, 254, HC.goldDk);
   });
+  // 衣柜（能站：顶面 200）
+  prop('wardrobe', () => wardrobe(1424, 200, 52, 80));
   lanternArt(...LANTERNS[2]);
   prop('loft_window', () => latticeWindow(...LOFT_WIN), null, () => PG.clearRect(...LOFT_WIN));   // 床上方的格子窗
   // 小地毯 + 一摞线装书
-  rect(1450, 278, 104, 2, OUTL); rect(1451, 278, 102, 1, tc.rug); for (let x = 1454; x < 1552; x += 5) dot(x, 278, HC.gold);
-  bookStack(1530, 280, 4, 2);
+  rect(1150, 278, 104, 2, OUTL); rect(1151, 278, 102, 1, tc.rug); for (let x = 1154; x < 1252; x += 5) dot(x, 278, HC.gold);
+  bookStack(1230, 280, 4, 2);
 }
 
 /* ============================================================
@@ -1044,7 +1089,7 @@ function drawHouseLive(g, t, ix, iy){
     }
   }
   // 全息屏里在下雨 + 闪烁的光标
-  const sx = X(1422), sy = Y(397);
+  const sx = X(1130), sy = Y(397);
   for (let i = 0; i < 10; i++){
     const rx = sx + 1 + ((i * 13) % 29), ry = sy + Math.floor((t * 24 + i * 11) % 26) - 3;
     if (ry >= sy + 9 && ry + 2 < sy + 22) rect(rx, ry, 1, 2, HC.jadeLt);
@@ -1060,7 +1105,7 @@ function drawHouseLive(g, t, ix, iy){
     }
   }
   // 铜机柜的小玉灯
-  dot(X(1420), Y(446), (t % 2.4) < 2 ? HC.jadeLt : HC.jadeDk);
+  dot(X(1128), Y(446), (t % 2.4) < 2 ? HC.jadeLt : HC.jadeDk);
   // 茶的热气：一缕一缕往上飘
   for (let k = 0; k < 2; k++){
     const ph = (t * 0.45 + k * 0.5) % 1;
@@ -1073,7 +1118,7 @@ function drawHouseLive(g, t, ix, iy){
    灯笼、宫灯、台灯在傍晚开始亮，夜里最亮（叠加的暖光，轻轻闪）；白天不亮
    c2 已经按像素缩放好，原点是镜头左上角；camX / camY 是镜头位置（像素）
    ============================================================ */
-const LAMPS = [...LANTERNS.map(([x, y]) => [x, y + 11, 'L']), [1508, 415, 'S'], [1710, 410, 'L']];   // 灯笼、书案上的台灯、格子窗旁的宫灯
+const LAMPS = [...LANTERNS.map(([x, y]) => [x, y + 11, 'L']), [1216, 415, 'S'], [1670, 410, 'L']];   // 灯笼、书案上的台灯、格子窗旁的宫灯
 function drawLights(c2, t, camX, camY, q, VW, VH){
   const m = skyMix(), lit = Math.min(1, m.night + m.dusk * 0.6);
   // 正片叠底：颜色还在，只是整体变暗、偏月光的蓝 / 晚霞的橘
@@ -1120,7 +1165,7 @@ function makeIvy(n, seed){
   PG = keep;
   return c;
 }
-const FG_IVY = [[300, A_CE + 9, 5], [660, A_CE + 9, 6], [1010, A_CE + 9, 7], [1700, A_MZ + 17, 5]].map(([x, y, n], i) => ({ x, y, c: makeIvy(n, i * 2.3) }));
+const FG_IVY = [[300, A_CE + 9, 5], [560, A_CE + 9, 6], [960, A_CE + 9, 7], [1700, A_MZ + 17, 5]].map(([x, y, n], i) => ({ x, y, c: makeIvy(n, i * 2.3) }));
 const FG_POT = (() => {   // 前景的大青花瓶，插着竹子
   const c = pxCanvas(40, 64), keep = PG;
   PG = c.getContext('2d');
@@ -1145,12 +1190,12 @@ function drawForeground(c2, t, camX, camY, q){
     if (x < -30 || x > VW + 30) continue;
     c2.drawImage(v.c, x - 12 + Math.round(Math.sin(t * 0.9 + v.x)), y);
   }
-  for (const ax of [462, 1338]){
+  for (const ax of [422, 1042]){
     const [x] = at(ax, 0);
     if (x < -30 || x > VW + 30) continue;
     c2.drawImage(FG_PILLAR, x - 9, -20);
   }
-  for (const ax of [420, 1290, 1560]){
+  for (const ax of [380, 1010, 1610]){
     const [x, y] = at(ax, A_FL);
     if (x < -40 || x > VW + 40) continue;
     c2.drawImage(FG_POT, x - 20, y - 54);
