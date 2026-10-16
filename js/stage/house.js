@@ -27,7 +27,7 @@ const HC = {
   fl: '#8a5638', flLt: '#b07048', flDk: '#6a4029', flSeam: '#4e2e1e',
   brick: '#4b4757', brickLt: '#5d586b', brickDk: '#383442',
   paper: '#f6e3c0', paperDk: '#e2c89a', ink: '#2a1a14',
-  gold: '#e8b04f', goldLt: '#ffd98a', goldDk: '#b07a30',
+  gold: '#e8b04f', goldLt: '#ffd98a', goldDk: '#b07a30', brass: '#7a5222',
   jade: '#5fb59a', jadeLt: '#a6e3c8', jadeDk: '#24584a',
   porc: '#f2f2ec', blue: '#3d5c9e', blueLt: '#9fb8e8',
   leaf: '#6f9a5a', leafLt: '#9cc47e', leafDk: '#476c3c',
@@ -37,6 +37,7 @@ const HC = {
   clay: '#a85a3a', clayLt: '#c97a52', straw: '#d9b36a', strawDk: '#a8833f',
   white: '#fbf6ea', celadon: '#a9cdb8',
 };
+const SHADOW = 'rgba(60,40,30,0.25)';   // 挂在墙上的东西底下一点点投影
 const BOOKC = [['#3d5c9e', '#2c4475'], ['#a8322d', '#7a2420'], ['#d9b36a', '#a8833f'], ['#476c3c', '#33502c'], ['#e2c89a', '#c4a874'], ['#5a3a6e', '#422a52']];
 
 /* 跟着主题变的颜色：灰泥墙、地毯 */
@@ -225,7 +226,7 @@ function moonGate(cx, cy, r){
   clearDisc(cx, cy, r);
   glints(cx - 30, cy - 4, 18); glints(cx - 24, cy, 8);
   bevel(cx - 56, cy + 54, 112, 5, HC.wl, HC.wh, HC.wd);   // 窗台（能站）
-  for (const bx of [cx - 50, cx + 42]) art(BRACKET.map(s => bx > cx ? [...s].reverse().join('') : s), PW, bx, cy + 59);
+  for (const bx of [cx - 50, cx + 42]) art(bx > cx ? BRACKET_R : BRACKET, PW, bx, cy + 59);
   rect(cx - 40, cy + 59, 80, 2, OUTL); rect(cx - 39, cy + 59, 78, 1, HC.wd);
 }
 /* 格子窗：朱漆框，玻璃四周一圈回纹格子，中间留空看外面；窗台顶面 = y + h */
@@ -307,7 +308,8 @@ function roundWindow(cx, cy, r){
 
 /* ---------- 小物件（字符画） ---------- */
 const PW = { k: OUTL, d: HC.wd, m: HC.wm, l: HC.wl, D: HC.wdk };
-const BRACKET = ['kmmmk', 'kmmk.', 'kmk..', 'kk...'];
+const mirror = rows => rows.map(r => [...r].reverse().join(''));   // 字符画左右翻过来
+const BRACKET = ['kmmmk', 'kmmk.', 'kmk..', 'kk...'], BRACKET_R = mirror(BRACKET);   // 木板下面的托架（左边的、右边的）
 const BONSAI = [
   '..kkkk...',
   '.kgggLk..',
@@ -369,7 +371,7 @@ const HAT = ['....kk....', '...kssk...', '..kssssk..', '.kssSsssk.', 'kkkkkkkkkk
 const HAT_PAL = { k: OUTL, s: HC.straw, S: HC.strawDk };
 const BOOT = ['kkkk...', 'k12k...', 'k122kk.', 'k11111k', 'kkkkkkk'];
 const BOOT_PAL = { k: '#2a2a2a', '1': '#595b5b', '2': '#787a79' };
-const LEAF = ['..kk.', '.kgLk', 'kggLk', 'kgLk.', 'kLk..', 'kk...'];
+const LEAF = ['..kk.', '.kgLk', 'kggLk', 'kgLk.', 'kLk..', 'kk...'], LEAF_L = mirror(LEAF);   // 竹叶（朝右、朝左）
 const LEAF_PAL = { k: OUTL, g: HC.leaf, L: HC.leafLt };
 
 /* 线装书：一摞平放的 */
@@ -455,8 +457,8 @@ function drawEntrance(){
   // 控制面板：铜框、玉色小屏幕（内容每帧画）、两个小按钮
   prop('control_panel', () => {
   const [cx, cy, cw, ch] = CTRL;
-  rect(cx + 1, cy + ch, cw, 1, 'rgba(60,40,30,0.25)');                     // 一点点投影
-  bevel(cx, cy, cw, ch, HC.goldDk, HC.gold, '#7a5222');
+  rect(cx + 1, cy + ch, cw, 1, SHADOW);
+  bevel(cx, cy, cw, ch, HC.goldDk, HC.gold, HC.brass);
   rect(cx + 2, cy + 2, cw - 4, 9, OUTL); rect(cx + 3, cy + 3, cw - 6, 7, HC.jadeDk);
   for (const bx of [cx + 3, cx + 8]) { rect(bx, cy + 13, 4, 3, OUTL); rect(bx + 1, cy + 14, 2, 1, HC.wl); }
   });
@@ -488,15 +490,14 @@ function woodenDummy(x){
   stick([[x + 11, 444], [x + 18, 448], [x + 20, 458]], 3);           // 脚
 }
 /* 匾：深色木板、金边，中间一个金色的圆、两边各两朵祥云（纹样，不写字） */
-const CLOUD = ['..kk.....', '.k..k.kk.', '.k.k.k..k', 'k..k..k.k', 'k...kk..k', '.kk....k.', '...kkkk..'];
+const CLOUD = ['..kk.....', '.k..k.kk.', '.k.k.k..k', 'k..k..k.k', 'k...kk..k', '.kk....k.', '...kkkk..'], CLOUD_R = mirror(CLOUD);
 function plaque(x, y){
   const w = 84, h = 19, cx = x + (w >> 1);
   rect(x + 2, y + h, w, 2, 'rgba(60,40,30,0.2)');
   boxO(x, y, w, h, '#2a1712'); rect(x + 2, y + 2, w - 4, 1, HC.goldDk); rect(x + 2, y + h - 3, w - 4, 1, HC.goldDk);
   rect(x + 2, y + 2, 1, h - 4, HC.goldDk); rect(x + w - 3, y + 2, 1, h - 4, HC.goldDk);
   ring(cx, y + 9, 5, HC.gold); disc(cx, y + 9, 2, HC.gold);
-  const flip = r => [...r].reverse().join('');
-  for (const [dx, f] of [[-34, 0], [-21, 0], [12, 1], [25, 1]]) art(f ? CLOUD.map(flip) : CLOUD, { k: HC.gold }, cx + dx, y + 6);
+  for (const [dx, f] of [[-34, 0], [-21, 0], [12, 1], [25, 1]]) art(f ? CLOUD_R : CLOUD, { k: HC.gold }, cx + dx, y + 6);
   for (const hx of [x + 10, x + w - 11]) rect(hx, A_CE + 9, 1, y - A_CE - 9, OUTL);   // 吊绳
 }
 /* 竹子画：一幅窄长的挂轴，画着三根竹子和几片叶子 */
@@ -504,7 +505,7 @@ function bambooScroll(x, y, w, h){
   scroll(x, y, w, h);
   for (const [bx, top] of [[x + 8, y + 10], [x + 14, y + 20], [x + 20, y + 6]]){
     for (let yy = top; yy < y + h - 6; yy++) dot(bx, yy, (yy - top) % 14 === 0 ? HC.leafDk : HC.leaf);
-    for (let k = top + 6; k < y + h - 14; k += 13){ art(LEAF, LEAF_PAL, bx + 1, k); art(LEAF.map(r => [...r].reverse().join('')), LEAF_PAL, bx - 5, k + 5); }
+    for (let k = top + 6; k < y + h - 14; k += 13){ art(LEAF, LEAF_PAL, bx + 1, k); art(LEAF_L, LEAF_PAL, bx - 5, k + 5); }
   }
   rect(x + w - 7, y + h - 9, 4, 4, HC.red);   // 红印
 }
@@ -528,7 +529,7 @@ function wallCalendar(){
   boxO(x, y, w, h, HC.white);
   rect(x + 1, y + 1, w - 2, 7, HC.red); rect(x + 1, y + 1, w - 2, 1, HC.redLt); rect(x + 1, y + 8, w - 2, 1, HC.lacD);
   rect(x + 1, y + h - 3, w - 2, 1, HC.paperDk);
-  rect(x + 2, y + h, w - 4, 1, OUTL); rect(x + 3, y + h + 1, w - 6, 1, 'rgba(60,40,30,0.25)');
+  rect(x + 2, y + h, w - 4, 1, OUTL); rect(x + 3, y + h + 1, w - 6, 1, SHADOW);
 }
 
 /* ---------- 跟着节气换的小装饰：茶桌旁的瓶花（九种）、门口置物板上的季节小物（四种） ---------- */
@@ -631,7 +632,7 @@ function curioShelf(x0, x1, top, seed){
 }
 function wallShelf(x0, x1, y, item){
   bevel(x0, y, x1 - x0, 4, HC.wl, HC.wh, HC.wd);
-  art(BRACKET, PW, x0 + 3, y + 4); art(BRACKET.map(r => [...r].reverse().join('')), PW, x1 - 8, y + 4);
+  art(BRACKET, PW, x0 + 3, y + 4); art(BRACKET_R, PW, x1 - 8, y + 4);
   if (item === 'books'){
     bookStack(x1 - 18, y, 3, Math.floor(x0 / 7));
     rect(x0 + 5, y - 5, 5, 5, OUTL); rect(x0 + 6, y - 4, 3, 3, HC.celadon);     // 青瓷小杯
@@ -723,10 +724,10 @@ function drawStudy(){
   // 电子钟：铜框、深色的屏，屏上是没亮的「88:88」（像真的数码管），右下角一颗小灯
   prop('e_clock', () => {
     const [x, y, w, h] = ECLOCK, x0 = x + ((w - 17) >> 1);
-    rect(x + 1, y + h, w, 1, 'rgba(60,40,30,0.25)');
-    bevel(x, y, w, h, HC.goldDk, HC.gold, '#7a5222');
+    rect(x + 1, y + h, w, 1, SHADOW);
+    bevel(x, y, w, h, HC.goldDk, HC.gold, HC.brass);
     rect(x + 2, y + 2, w - 4, h - 4, OUTL); rect(x + 3, y + 3, w - 6, h - 6, '#10261f');
-    for (const dx of ECLOCK_DIGIT_X) DIGITS[8].forEach((r, j) => { for (let k = 0; k < 3; k++) if (r[k] === '#') dot(x0 + dx + k, y + 5 + j, '#1c3a31'); });
+    digits('8888', x0, y + 5, '#1c3a31', 1, ECLOCK_DIGIT_X);
     dot(x + w - 3, y + h - 2, HC.jade);
   });
   // 绣墩（能站）
@@ -742,8 +743,8 @@ function drawStudy(){
     rect(x0 - 2, y - 2, 4, 3, OUTL); rect(x1 - 2, y - 2, 4, 3, OUTL); dot(x0 - 1, y - 1, HC.wl); dot(x1, y - 1, HC.wl);   // 两头翘起来
     for (const x of [x0 + 3, x1 - 7]) boxO(x, y + 5, 5, A_FL - y - 5, HC.wd);
     bevel(x0 + 55, y + 5, 55, 13, HC.wm, HC.wl, HC.wd); rect(x0 + 78, y + 10, 9, 3, OUTL); rect(x0 + 79, y + 11, 7, 1, HC.gold);
-    bevel(x0 + 12, y + 6, 14, A_FL - y - 6, HC.goldDk, HC.gold, '#7a5222');
-    for (let yy = y + 17; yy < A_FL - 4; yy += 3) rect(x0 + 15, yy, 8, 1, '#7a5222');
+    bevel(x0 + 12, y + 6, 14, A_FL - y - 6, HC.goldDk, HC.gold, HC.brass);
+    for (let yy = y + 17; yy < A_FL - 4; yy += 3) rect(x0 + 15, yy, 8, 1, HC.brass);
   });
   // 电脑：全息屏（铜框，屏幕里的雨在 drawHouseLive 里画）+ 铜键盘、鼠标；玉石、青瓷杯；宫灯台灯
   prop('computer', () => {
@@ -775,11 +776,11 @@ const PC = [DESK[0] + 17, DESK[2] - 41];   // 电脑（左上角）：摆在书�
 const SCREEN = [PC[0] + 3, PC[1] + 3];      // 电脑屏幕的左上角（屏里的雨每帧画）
 /* 浑天仪：铜座、立柱，一个正圆的铜环、一横一竖两个扁圆的环，中间一颗玉色小球，顶上一颗铜珠。x：中心，y：底 */
 function armillary(x, y){
-  bevel(x - 12, y - 6, 25, 6, HC.goldDk, HC.gold, '#7a5222');
-  rect(x - 7, y - 9, 15, 3, '#7a5222'); rect(x - 6, y - 9, 13, 1, HC.goldDk);
-  rect(x - 1, y - 30, 3, 21, '#7a5222'); rect(x, y - 30, 1, 21, HC.gold);
+  bevel(x - 12, y - 6, 25, 6, HC.goldDk, HC.gold, HC.brass);
+  rect(x - 7, y - 9, 15, 3, HC.brass); rect(x - 6, y - 9, 13, 1, HC.goldDk);
+  rect(x - 1, y - 30, 3, 21, HC.brass); rect(x, y - 30, 1, 21, HC.gold);
   const cx = x, cy = y - 46;
-  ring(cx, cy, 15, '#7a5222'); ring(cx, cy, 14, HC.gold);
+  ring(cx, cy, 15, HC.brass); ring(cx, cy, 14, HC.gold);
   for (let a = 0; a < TAU; a += 0.02) dot(cx + Math.round(Math.cos(a) * 14), cy + Math.round(Math.sin(a) * 5), HC.goldDk);
   for (let a = 0; a < TAU; a += 0.02) dot(cx + Math.round(Math.cos(a) * 5), cy + Math.round(Math.sin(a) * 14), HC.goldLt);
   disc(cx, cy, 4, HC.jadeDk); disc(cx, cy, 3, HC.jade); dot(cx - 1, cy - 1, HC.jadeLt);
@@ -819,7 +820,7 @@ function drawRightEnd(){
   prop('bamboo_pot', () => {
   for (const [lx, h] of [[1742, 48], [1747, 58], [1752, 44], [1745, 36]]){
     for (let j = 0; j < h; j++){ dot(lx, 452 - j, j % 12 === 0 ? OUTL : HC.leafDk); dot(lx + 1, 452 - j, HC.leaf); }
-    for (let k = 10; k < h; k += 9){ art(LEAF, LEAF_PAL, lx + 1, 452 - k - 3); art(LEAF.map(r => [...r].reverse().join('')), LEAF_PAL, lx - 5, 452 - k); }
+    for (let k = 10; k < h; k += 9){ art(LEAF, LEAF_PAL, lx + 1, 452 - k - 3); art(LEAF_L, LEAF_PAL, lx - 5, 452 - k); }
   }
   for (let j = 0; j < 18; j++){ const w = 12 - Math.floor(j / 4); rect(1748 - w, 452 + j, w * 2 + 1, 1, OUTL); if (j && j < 17) rect(1749 - w, 452 + j, w * 2 - 1, 1, j % 6 === 3 ? HC.blue : HC.porc); }
   });
@@ -1055,6 +1056,13 @@ function pomoText(){
   if (typeof Pomo === 'undefined' || !Store.data) return ['25:00', 0];
   return Pomo.display();   // 番茄钟 / 计时器是倒数，正计时是往上数
 }
+/* 写一串数字（3 × 5 的像素字）：每一格 sc × sc；step 是一个字占多宽，或者每个字的位置 */
+function digits(txt, x, y, col, sc = 1, step = 3 * sc + 1){
+  [...txt].forEach((ch, i) => {
+    const x0 = x + (typeof step === 'number' ? i * step : step[i]);
+    DIGITS[ch].forEach((r, j) => { for (let k = 0; k < 3; k++) if (r[k] === '#') rect(x0 + k * sc, y + j * sc, sc, sc, col); });
+  });
+}
 const DIGITS = {
   0: ['###', '#.#', '#.#', '#.#', '###'], 1: ['.#.', '##.', '.#.', '.#.', '###'], 2: ['###', '..#', '###', '#..', '###'],
   3: ['###', '..#', '###', '..#', '###'], 4: ['#.#', '#.#', '###', '..#', '..#'], 5: ['###', '#..', '###', '..#', '###'],
@@ -1063,13 +1071,14 @@ const DIGITS = {
 function drawHouseLive(g, t, ix, iy){
   PG = g;
   const X = x => x - ix, Y = y => y - iy;
+  const seen = (x, y, w, h) => x < g.canvas.width && x + w > 0 && y < g.canvas.height && y + h > 0;   // 这一块（已经减掉镜头位置）在镜头里吗
   // 番茄钟挂轴：分、秒各一行，下面一条朱红的进度
   const [px, py, pw] = POMO_SCROLL;
-  if (X(px) < 460 && X(px + pw) > 0 && Y(py) < 260 && Y(py + 60) > 0){
+  if (seen(X(px), Y(py), pw, 60)){
     const [txt, frac] = pomoText(), running = typeof Pomo !== 'undefined' && Pomo.t.running;
     txt.split(':').forEach((part, row) => {   // 第一行分、第二行秒；分钟可能是三位数（时长最多 180 分钟）
       const x0 = px + Math.round((pw - part.length * 8 + 2) / 2);
-      [...part].forEach((ch, i) => DIGITS[ch].forEach((r, j) => { for (let k = 0; k < 3; k++) if (r[k] === '#') rect(X(x0 + i * 8 + k * 2), Y(py + 7 + row * 14 + j * 2), 2, 2, HC.ink); }));
+      digits(part, X(x0), Y(py + 7 + row * 14), HC.ink, 2, 8);
     });
     if (!running || (t % 1) < 0.5){ dot(X(px + 12), Y(py + 27), HC.red); }
     rect(X(px + 4), Y(py + 48), pw - 8, 2, HC.paperDk); rect(X(px + 4), Y(py + 48), Math.round((pw - 8) * frac), 2, HC.red);
@@ -1078,8 +1087,8 @@ function drawHouseLive(g, t, ix, iy){
   // 门口的控制面板：屏幕上一个小齿轮在发光，指示灯一闪一闪
   const R = typeof Room !== 'undefined' ? Room : null;
   {
-    const [cx, cy, cw] = CTRL, x = X(cx), y = Y(cy), hot = R && (R.hover === 'panel' || R.near === 'panel');
-    if (x > -30 && x < 470 && y > -30 && y < 270){
+    const [cx, cy, cw, ch] = CTRL, x = X(cx), y = Y(cy), hot = R && (R.hover === 'panel' || R.near === 'panel');
+    if (seen(x, y, cw, ch)){
       const gear = ['.#.#.', '#####', '##.##', '#####', '.#.#.'];
       gear.forEach((r, j) => { for (let i = 0; i < 5; i++) if (r[i] === '#') dot(x + 5 + i, y + 4 + j, hot ? '#e8fff6' : HC.jadeLt); });
       if (hot) rect(x + 3, y + 3, cw - 6, 7, 'rgba(166,227,200,0.25)');
@@ -1088,21 +1097,18 @@ function drawHouseLive(g, t, ix, iy){
   }
   // 日历：上面红条里是几月，中间大大的几号，下面一排小格子是星期（今天那格是红的，周一在最左）
   {
-    const [cx, cy, cw] = CAL, x = X(cx), y = Y(cy);
-    if (x > -30 && x < 470 && y > -30 && y < 270){
+    const [cx, cy, cw, ch] = CAL, x = X(cx), y = Y(cy);
+    if (seen(x, y, cw, ch)){
       const now = new Date(), mo = String(now.getMonth() + 1), dd = String(now.getDate()), wd = (now.getDay() + 6) % 7;
-      const digits = (txt, x0, y0, sc, col) => [...txt].forEach((ch, i) => DIGITS[ch].forEach((r, j) => {
-        for (let k = 0; k < 3; k++) if (r[k] === '#') rect(x0 + i * (3 * sc + 1) + k * sc, y0 + j * sc, sc, sc, col);
-      }));
-      digits(mo, x + Math.round((cw - (mo.length * 4 - 1)) / 2), y + 2, 1, HC.white);
-      digits(dd, x + Math.round((cw - (dd.length * 7 - 1)) / 2), y + 10, 2, HC.ink);
+      digits(mo, x + Math.round((cw - (mo.length * 4 - 1)) / 2), y + 2, HC.white);
+      digits(dd, x + Math.round((cw - (dd.length * 7 - 1)) / 2), y + 10, HC.ink, 2);
       for (let k = 0; k < 7; k++) rect(x + 2 + k * 3, y + 22, 2, 2, k === wd ? HC.red : (k >= 5 ? HC.paperDk : '#d9cdb8'));
     }
   }
   // 音箱：放着声音的时候低音一鼓一鼓、指示灯亮、往右边飘出小音符（左边是墙角）
   {
     const [sx, sy, sw, sh] = SPEAKER, x = X(sx), y = Y(sy);
-    if (x > -40 && x < 480 && y > -60 && y < 280 && typeof Ambience !== 'undefined' && Ambience.playing()){
+    if (seen(x, y - 6, sw + 28, sh + 6) && typeof Ambience !== 'undefined' && Ambience.playing()){   // 音符往右上飘出箱子外
       const [cx, cy] = SPK_CONE(x, y, sw, sh);
       if ((t * 3.2) % 1 < 0.45){ ring(cx, cy, 6, '#4a3c36'); disc(cx, cy, 2, '#6a5a52'); }
       dot(x + sw - 4, y + sh - 4, '#8fe07e');
@@ -1136,10 +1142,10 @@ function drawHouseLive(g, t, ix, iy){
   if ((t % 1) < 0.5) rect(sx + 3, sy + 17, 3, 1, HC.jadeLt);
   // 电子钟：真实的时、分，中间两点一秒闪一下
   {
-    const [ex, ey, ew] = ECLOCK, x = X(ex), y = Y(ey);
-    if (x > -40 && x < 480 && y > -30 && y < 280){
+    const [ex, ey, ew, eh] = ECLOCK, x = X(ex), y = Y(ey);
+    if (seen(x, y, ew, eh)){
       const now = new Date(), txt = String(now.getHours()).padStart(2, '0') + String(now.getMinutes()).padStart(2, '0'), x0 = x + ((ew - 17) >> 1);
-      [...txt].forEach((ch, i) => DIGITS[ch].forEach((r, j) => { for (let k = 0; k < 3; k++) if (r[k] === '#') dot(x0 + ECLOCK_DIGIT_X[i] + k, y + 5 + j, HC.jadeLt); }));
+      digits(txt, x0, y + 5, HC.jadeLt, 1, ECLOCK_DIGIT_X);
       if (now.getMilliseconds() < 500){ dot(x0 + 8, y + 6, HC.jadeLt); dot(x0 + 8, y + 8, HC.jadeLt); }
     }
   }
