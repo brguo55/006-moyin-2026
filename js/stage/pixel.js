@@ -30,10 +30,18 @@ function bevel(x, y, w, h, fill, lt, dk, ol = OUTL){
   boxO(x, y, w, h, fill, ol);
   if (w > 3 && h > 3){ rect(x + 1, y + 1, w - 2, 1, lt); if (h > 4) rect(x + 1, y + h - 2, w - 2, 1, dk); }
 }
-/* 棋盘格抖动（像素画里的「半透明 / 渐变」） */
+/* 棋盘格抖动（像素画里的「半透明 / 渐变」）：左上角那格是 (x, y)，ph 是单数就错开一格。
+   用一张 2 × 2 的小花样平铺，一下填满（不用一个点一个点地画）；花样按颜色和单双格缓存 */
+const ditherPats = new Map();
 function dither(x, y, w, h, c, ph = 0){
-  PG.fillStyle = c;
-  for (let j = 0; j < h; j++) for (let i = (j + ph) & 1; i < w; i += 2) PG.fillRect(x + i, y + j, 1, 1);
+  const odd = (x + y + ph) & 1, key = c + odd;
+  let pat = ditherPats.get(key);
+  if (!pat){
+    const t = pxCanvas(2, 2), g = t.getContext('2d');
+    g.fillStyle = c; g.fillRect(odd, 0, 1, 1); g.fillRect(1 - odd, 1, 1, 1);
+    ditherPats.set(key, pat = g.createPattern(t, 'repeat'));
+  }
+  PG.fillStyle = pat; PG.fillRect(x, y, w, h);
 }
 function disc(cx, cy, r, c){
   for (let dy = -r; dy <= r; dy++){ const dx = Math.round(Math.sqrt(r * r - dy * dy)); rect(cx - dx, cy + dy, dx * 2 + 1, 1, c); }

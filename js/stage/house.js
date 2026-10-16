@@ -174,14 +174,16 @@ function paintHouse(g){
 
 /* 回纹：一个 8 像素的「卍字回纹」单元，横着排 */
 const FRET = ['########', '#......#', '#.####.#', '#.#..#.#', '#.#.##.#', '#.#....#', '#.######'];
+const fretArt = {};   // 一个回纹单元先画成小图（按颜色），一条饰带上要盖几百个
+const fretUnit = c => fretArt[c] || (fretArt[c] = makeSprite(FRET, { '#': c }));
 function fretBand(x, y, w, base, line){
   rect(x, y, w, 9, base); rect(x, y + 8, w, 1, OUTL);
-  for (let px = x + 2; px + 8 <= x + w; px += 10) FRET.forEach((row, j) => { for (let i = 0; i < 8; i++) if (row[i] === '#') dot(px + i, y + 1 + j, line); });
+  for (let px = x + 2; px + 8 <= x + w; px += 10) PG.drawImage(fretUnit(line), px, y + 1);
 }
 function wainscot(x, y, w, h){
   rect(x, y, w, h, HC.wd);
   rect(x, y, w, 1, OUTL); rect(x, y + 1, w, 1, HC.wl);
-  for (let px = x + 4; px + 8 <= x + w; px += 12) FRET.forEach((row, j) => { for (let i = 0; i < 8; i++) if (row[i] === '#') dot(px + i, y + 5 + j, HC.wm); });
+  for (let px = x + 4; px + 8 <= x + w; px += 12) PG.drawImage(fretUnit(HC.wm), px, y + 5);
   rect(x, y + h - 4, w, 4, HC.wdk); rect(x, y + h - 4, w, 1, OUTL);
 }
 function pillar(x, y, h, base){
@@ -227,17 +229,27 @@ function moonGate(cx, cy, r){
   rect(cx - 40, cy + 59, 80, 2, OUTL); rect(cx - 39, cy + 59, 78, 1, HC.wd);
 }
 /* 格子窗：朱漆框，玻璃四周一圈回纹格子，中间留空看外面；窗台顶面 = y + h */
+let latticeTile = null;
+function latticePat(){
+  if (!latticeTile){
+    const c = pxCanvas(7, 7), keep = PG;
+    PG = c.getContext('2d');
+    for (let gy = 0; gy < 7; gy++) for (let gx = 0; gx < 7; gx++)
+      if (gx === 0 || gy === 0 || (gx === 3 && gy > 1 && gy < 6) || (gy === 3 && gx > 1 && gx < 6)) dot(gx, gy, HC.wd);
+    PG = keep;
+    latticeTile = c.getContext('2d').createPattern(c, 'repeat');
+  }
+  return latticeTile;
+}
 function latticeWindow(x, y, w, h){
   bevel(x - 6, y - 6, w + 12, h + 12, HC.lac, HC.lacL, HC.lacD);
   rect(x - 1, y - 1, w + 2, h + 2, OUTL);
   PG.clearRect(x, y, w, h);
   const lw = 7;
-  for (const [lx, ly, ww, hh] of [[x, y, w, lw], [x, y + h - lw, w, lw], [x, y, lw, h], [x + w - lw, y, lw, h]]){
-    for (let j = 0; j < hh; j++) for (let i = 0; i < ww; i++){
-      const gx = (lx + i - x) % 7, gy = (ly + j - y) % 7;
-      if (gx === 0 || gy === 0 || (gx === 3 && gy > 1 && gy < 6) || (gy === 3 && gx > 1 && gx < 6)) dot(lx + i, ly + j, HC.wd);
-    }
-  }
+  // 四边一圈格子：7 × 7 的一格做成花样，从窗户左上角开始平铺
+  PG.save(); PG.translate(x, y); PG.fillStyle = latticePat();
+  for (const [lx, ly, ww, hh] of [[0, 0, w, lw], [0, h - lw, w, lw], [0, 0, lw, h], [w - lw, 0, lw, h]]) PG.fillRect(lx, ly, ww, hh);
+  PG.restore();
   rect(x + lw, y + lw, w - lw * 2, 1, OUTL); rect(x + lw, y + h - lw - 1, w - lw * 2, 1, OUTL);
   rect(x + lw, y + lw, 1, h - lw * 2, OUTL); rect(x + w - lw - 1, y + lw, 1, h - lw * 2, OUTL);
   glints(x + 14, y + 30, 14); glints(x + 20, y + 32, 6);
@@ -249,27 +261,40 @@ const fanInGlass = (cx, cy, ro, ri, x, y) => {
   const dx = x - cx, dy = y - cy, r = Math.hypot(dx, dy), a = Math.atan2(dy, dx) * 180 / Math.PI;
   return r >= ri && r <= ro && a >= -150 && a <= -30;
 };
-/* 扇面窗的玻璃挖空（换成老师的图时用） */
-function fanGlass(cx, cy, ro, ri){
-  for (let y = cy - ro; y <= cy; y++) for (let x = cx - ro; x <= cx + ro; x++) if (fanInGlass(cx, cy, ro, ri, x, y)) PG.clearRect(x, y, 1, 1);
-}
-function fanWindow(cx, cy, ro, ri){
+/* 扇面窗的样子只看尺寸：第一次画时算好，做成两张小图 —— 木框，和玻璃的形状（用来挖空） */
+let fanArt = null;
+function fanParts(cx, cy, ro, ri){
+  const key = [cx, cy, ro, ri].join();
+  if (fanArt && fanArt.key === key) return fanArt;
   const x0 = cx - ro - 8, y0 = cy - ro - 8, w = ro * 2 + 17, hh = ro + 8;
-  const inGlass = (x, y) => fanInGlass(cx, cy, ro, ri, x, y);
-  const D = new Uint8Array(w * hh).fill(255), at = (x, y) => (y - y0) * w + (x - x0);
-  for (let y = y0; y < y0 + hh; y++) for (let x = x0; x < x0 + w; x++) if (inGlass(x, y)) D[at(x, y)] = 0;
-  for (let k = 1; k <= 6; k++) for (let y = y0; y < y0 + hh; y++) for (let x = x0; x < x0 + w; x++){
-    if (D[at(x, y)] !== 255) continue;
+  const D = new Uint8Array(w * hh).fill(255);   // 离玻璃几格（0 = 玻璃，255 = 太远、不画）
+  for (let j = 0; j < hh; j++) for (let i = 0; i < w; i++) if (fanInGlass(cx, cy, ro, ri, x0 + i, y0 + j)) D[j * w + i] = 0;
+  for (let k = 1; k <= 6; k++) for (let j = 0; j < hh; j++) for (let i = 0; i < w; i++){
+    if (D[j * w + i] !== 255) continue;
     for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++){
-      const xx = x + dx, yy = y + dy;
-      if (xx >= x0 && xx < x0 + w && yy >= y0 && yy < y0 + hh && D[at(xx, yy)] === k - 1) D[at(x, y)] = k;
+      const ii = i + dx, jj = j + dy;
+      if (ii >= 0 && ii < w && jj >= 0 && jj < hh && D[jj * w + ii] === k - 1) D[j * w + i] = k;
     }
   }
-  const COL = [null, OUTL, HC.gold, HC.wl, HC.wm, HC.wd, OUTL];
-  for (let y = y0; y < y0 + hh; y++) for (let x = x0; x < x0 + w; x++){
-    const d = D[at(x, y)];
-    if (d === 0) PG.clearRect(x, y, 1, 1); else if (d <= 6) dot(x, y, COL[d]);
-  }
+  const COL = [null, OUTL, HC.gold, HC.wl, HC.wm, HC.wd, OUTL].map(c => c && hexRgb(c));
+  const frame = pxCanvas(w, hh), glass = pxCanvas(w, hh);
+  const fi = frame.getContext('2d').createImageData(w, hh), gi = glass.getContext('2d').createImageData(w, hh);
+  D.forEach((d, n) => {
+    if (d === 0) gi.data[n * 4 + 3] = 255;
+    else if (d <= 6){ fi.data.set(COL[d], n * 4); fi.data[n * 4 + 3] = 255; }
+  });
+  frame.getContext('2d').putImageData(fi, 0, 0); glass.getContext('2d').putImageData(gi, 0, 0);
+  return (fanArt = { key, x0, y0, frame, glass });
+}
+/* 扇面窗的玻璃挖空（换成老师的图时也用它） */
+function fanGlass(cx, cy, ro, ri){
+  const f = fanParts(cx, cy, ro, ri);
+  PG.globalCompositeOperation = 'destination-out'; PG.drawImage(f.glass, f.x0, f.y0); PG.globalCompositeOperation = 'source-over';
+}
+function fanWindow(cx, cy, ro, ri){
+  const f = fanParts(cx, cy, ro, ri);
+  fanGlass(cx, cy, ro, ri);
+  PG.drawImage(f.frame, f.x0, f.y0);
   glints(cx - 26, cy - 22, 10); glints(cx - 20, cy - 20, 5);
 }
 function roundWindow(cx, cy, r){
@@ -933,7 +958,8 @@ function isle(cx, cy, w, P){
   rect(cx - 4, cy - 14, 8, 4, P.isle[2]); rect(cx - 6, cy - 15, 12, 1, P.isle[2]);
   if (P.lit){ dot(cx - 2, cy - 5, '#ffbb67'); dot(cx - 2, cy - 4, '#ffbb67'); dot(cx + 2, cy - 5, '#ffbb67'); }
 }
-const FAR = { night: paintFar(FAR_PAL.night), dusk: paintFar(FAR_PAL.dusk), day: paintFar(FAR_PAL.day) };
+const FAR = {};   // 三张远景用到哪张才画哪张（白天打开就只画白天那张）
+const farOf = k => FAR[k] || (FAR[k] = paintFar(FAR_PAL[k]));
 /* 雨丝（穹顶里的人工雨）：在远景层上，所以只在窗户里看得见 */
 const RAIN = Array.from({ length: 150 }, (_, i) => ({ x: hash(i * 3.1) * 460, y: hash(i * 7.7) * 270, v: 120 + hash(i * 1.3) * 60 }));
 
@@ -983,12 +1009,12 @@ function drawFar(g, t, ix, iy, w, h){
   const fx = Math.floor(ix * FAR_PAR), fy = Math.floor(iy * FAR_PAR * 0.6);
   // 天色：两张之间按比例一格一格溶（和换主题一样的抖动溶解）
   const m = skyMix(), ls = [['night', m.night], ['dusk', m.dusk], ['day', m.day]].filter(l => l[1] > 0.001).sort((a, b) => b[1] - a[1]);
-  g.drawImage(FAR[ls[0][0]], fx, fy, w, h, 0, 0, w, h);
+  g.drawImage(farOf(ls[0][0]), fx, fy, w, h, 0, 0, w, h);
   if (ls[1]){
     if (!farMix || farMix.width !== w || farMix.height !== h) farMix = pxCanvas(w, h);
     const fm = farMix.getContext('2d');
     fm.globalCompositeOperation = 'source-over'; fm.clearRect(0, 0, w, h);
-    fm.drawImage(FAR[ls[1][0]], fx, fy, w, h, 0, 0, w, h);
+    fm.drawImage(farOf(ls[1][0]), fx, fy, w, h, 0, 0, w, h);
     fm.globalCompositeOperation = 'destination-in';
     fm.fillStyle = bayerPat(Math.round(ls[1][1] * 16));
     fm.fillRect(0, 0, w, h);
