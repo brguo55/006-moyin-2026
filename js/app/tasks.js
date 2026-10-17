@@ -130,7 +130,9 @@ const Tasks = {
     const listId = Store.data.lists.some(l => l.id === this.view) ? this.view : 'inbox';
     const time = due ? q.time : null;
     if (time) Reminders.askPermission();
-    Store.update(d => d.tasks.push({ id: uid(), listId, title: q.title, notes: '', due, time, remind: time ? 0 : null, done: false, doneAt: 0, createdAt: Date.now() }));
+    const t = { id: uid(), listId, title: q.title, notes: '', due, time, remind: time ? 0 : null, done: false, doneAt: 0, createdAt: Date.now() };
+    Reminders.settle(t);   // 写的时间今天已经过了：不马上响
+    Store.update(d => d.tasks.push(t));
     this.el.input.value = ''; this.el.date.value = ''; this._hint();
   },
 
@@ -169,8 +171,10 @@ const Tasks = {
     const q = parseQuickDue(raw), now = Date.now();
     this.el.mustInput.value = '';
     if (q.time) Reminders.askPermission();
-    Store.update(d => d.tasks.push({ id: uid(), listId: 'inbox', title: q.title, notes: '', due: q.due || dayKey(), time: q.time, remind: q.time ? 0 : null,
-      done: false, doneAt: 0, createdAt: now, top: now }));
+    const t = { id: uid(), listId: 'inbox', title: q.title, notes: '', due: q.due || dayKey(), time: q.time, remind: q.time ? 0 : null,
+      done: false, doneAt: 0, createdAt: now, top: now };
+    Reminders.settle(t);
+    Store.update(d => d.tasks.push(t));
   },
   /* 设为 / 移出「今天至少完成」（移出后任务还在下面的清单里） */
   setMust(id, on){

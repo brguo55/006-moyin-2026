@@ -41,8 +41,10 @@ const Matrix = {
       if (e.key !== 'Enter' || e.isComposing || !input.value.trim()) return;
       const p = parseQuickDue(input.value);
       if (p.time) Reminders.askPermission();
-      Store.update(d => d.tasks.push({ id: uid(), listId: 'inbox', title: p.title, notes: '', due: p.due, time: p.time, remind: p.time ? 0 : null,
-        done: false, doneAt: 0, createdAt: Date.now(), quad: q }));
+      const t = { id: uid(), listId: 'inbox', title: p.title, notes: '', due: p.due, time: p.time, remind: p.time ? 0 : null,
+        done: false, doneAt: 0, createdAt: Date.now(), quad: q };
+      Reminders.settle(t);   // 写的时间今天已经过了：不马上响
+      Store.update(d => d.tasks.push(t));
       setTimeout(() => { const again = this.el.grid.querySelector(`.quad[data-q="${q}"] .quad-add`); if (again) again.focus(); });
     } });
     return this._dropZone(h('div.quad', { 'data-q': q, style: quadVars(q) },
