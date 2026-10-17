@@ -183,14 +183,22 @@ const Tasks = {
   renderChips(){
     const d = Store.data, today = dayKey(), must = new Set(this._must().map(t => t.id));
     if (this.view !== 'today' && this.view !== 'all' && !d.lists.some(l => l.id === this.view)) this.view = 'inbox';   // 清单被删了（比如撤销导入）
-    const undone = d.tasks.filter(t => !t.done && !must.has(t.id));   // 和下面的清单一样：不算钉在上面的
+    // 每个页签上的数字：没做完、也不算钉在上面的（和下面的清单一样）；任务只过一遍
+    let nAll = 0, nToday = 0;
+    const nList = new Map();
+    for (const t of d.tasks){
+      if (t.done || must.has(t.id)) continue;
+      nAll++;
+      if (t.due && t.due <= today) nToday++;
+      nList.set(t.listId, (nList.get(t.listId) || 0) + 1);
+    }
     const chip = (id, label, n) => h('button.chip' + (this.view === id ? '.on' : ''),
       { onclick: () => { this.view = id; this.openId = null; this.pages = 1; this.refresh(); } }, label, n ? h('span.n', null, n) : null);
     this.el.chips.replaceChildren(
-      chip('today', '今天', undone.filter(t => t.due && t.due <= today).length),
-      chip('all', '全部', undone.length),
+      chip('today', '今天', nToday),
+      chip('all', '全部', nAll),
       ...d.lists.map(l => {
-        const c = chip(l.id, l.name, undone.filter(t => t.listId === l.id).length);
+        const c = chip(l.id, l.name, nList.get(l.id) || 0);
         return l.id === 'inbox' ? c : this._draggable(c, l.id);
       }),
       h('button.chip.add', { title: '新建清单', onclick: async () => {
