@@ -42,10 +42,11 @@ const KV = {
   },
   async del(key){
     const db = await this.open();
-    return new Promise(ok => {
+    return new Promise((ok, fail) => {
       const tx = db.transaction('kv', 'readwrite');
       tx.objectStore('kv').delete(key);
       tx.oncomplete = () => ok();
+      tx.onerror = () => fail(tx.error);   // 删不掉也要有个结果，不然等它的地方会一直卡着
     });
   },
 };

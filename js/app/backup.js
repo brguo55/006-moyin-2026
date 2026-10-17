@@ -94,7 +94,7 @@ const Backup = {
   async stopFolder(){
     this.dir = null; this.perm = this.supported ? 'none' : 'unsupported';
     this.info.folder = '';
-    await KV.del('dir');
+    try { await KV.del('dir'); } catch (e){ toast('没能忘掉这个文件夹：' + (e && e.message || e)); }
     await KV.set('backup', this.info);
     this._emit();
   },
