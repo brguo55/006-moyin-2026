@@ -45,6 +45,9 @@ for (const a of Object.values(RABBIT.anims)){
   a.total = a.cum[a.n];
   a.img = new Image(); a.img.src = 'assets/rabbit/' + a.file + '.png';
 }
+/* 一次性动作有多长（秒）：起跳、二段跳、落地只播动画里的那几帧，其余的播整段（room.js 每帧都要问，先算好） */
+const seqLen = (a, frames) => frames.reduce((s, f) => s + a.ms[f], 0) / 1000;
+RABBIT.ACT_LEN = { takeoff: seqLen(RABBIT.anims.jump_right, RABBIT.TAKEOFF), boost: seqLen(RABBIT.anims.sec_right, RABBIT.BOOST), land: seqLen(RABBIT.anims.jump_right, RABBIT.LAND) };
 /* 播到第 t 秒是第几帧。loop：从第 loop 帧开始循环（前面几帧只播一次）；loop = -1 不循环，播完返回 -1 */
 function rabbitFrame(a, t, loop = 0){
   if (t >= a.total){

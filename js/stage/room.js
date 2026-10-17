@@ -36,6 +36,7 @@ const APEX_V = 90, APEX_GRAV = 0.55;   // 按住空格时，快到最高点那�
 const AIR_CONTROL = 15;                // 空中转向的灵敏度（地面是 22）
 const COYOTE = 0.09, BUFFER = 0.12;    // 走出边缘后还能起跳的时间 / 提前按跳的缓冲
 const FG_PAR = 0.3, FAR_PAR = 0.5;     // 前景比中景多移动 30%；窗外景色只移动一半
+const ROOM_KEYS = new Set(['KeyA', 'KeyD', 'Space', 'KeyS', 'KeyE', 'KeyW']);   // rabbit 认的键（按别的键不拦）
 const NAP_MIN = 3;                     // 默认多少分钟没操控 rabbit，他就打瞌睡（设置 → 小房子 里能改，0 = 不睡）；按真实时间算，切到别的窗口也照样计时
 
 /* ---------- 能站的面（单向平台）----------
@@ -125,7 +126,7 @@ const Room = {
 
   /* ---------- 输入 ---------- */
   keyDown(code){
-    if (!['KeyA', 'KeyD', 'Space', 'KeyS', 'KeyE', 'KeyW'].includes(code)) return false;
+    if (!ROOM_KEYS.has(code)) return false;
     if (this.dozing()){ this._napHint(); return true; }   // 打瞌睡：按键都不管用，要点他一下才醒
     this._touched();
     if (code === 'KeyA' || code === 'KeyD') this.keys.add(code);
@@ -209,14 +210,8 @@ const Room = {
     const m = s && s.napMin != null ? s.napMin : NAP_MIN;
     return m > 0 ? m * 60e3 : Infinity;
   },
-  /* 一次性动作有多长（秒） */
-  _actLen(kind){
-    const R = RABBIT, A = R.anims, sum = (a, frames) => frames.reduce((s, f) => s + a.ms[f], 0) / 1000;
-    if (kind === 'takeoff') return sum(A.jump_right, R.TAKEOFF);
-    if (kind === 'boost') return sum(A.sec_right, R.BOOST);
-    if (kind === 'land') return sum(A.jump_right, R.LAND);
-    return A[kind].total;
-  },
+  /* 一次性动作有多长（秒；sprites.js 先算好了） */
+  _actLen(kind){ return RABBIT.ACT_LEN[kind] ?? RABBIT.anims[kind].total; },
   _burst(x, y, n){
     for (let i = 0; i < n; i++) this.hearts.push({ x: x + rnd(-6, 6), y: y + rnd(-4, 4), vx: rnd(-14, 14), vy: rnd(-48, -30),
       t: 0, life: rnd(1.2, 1.8), size: rnd(5, 8), ph: rnd(0, TAU) });
