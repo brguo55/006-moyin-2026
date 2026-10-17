@@ -155,6 +155,7 @@ function onDataReplaced(){
   setThemeNow(s.theme);
   setMuted(s.muted);
   App.themeVars();
+  Tasks.rollover();         // 备份里过了日期、还没做完的任务：挪到今天
   Pomo.refresh();
   SoundDesk.applyAll();   // 备份里开着的环境声
 }

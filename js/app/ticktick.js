@@ -169,6 +169,7 @@ const TickTick = {
         + '\n\n只会添加，不改动、不删除听雨里已有的东西；导错了可以在设置里撤销。' });
     if (!ok) return;
     Store.update(d => { d.lists.push(...p.lists); d.tasks.push(...p.tasks); });
+    Tasks.rollover();   // 滴答清单里已经过了日期、还没做完的：和平时一样挪到今天
     toast(`导入了 ${p.tasks.length} 个任务` + (p.lists.length ? `，新建了 ${p.lists.length} 个清单` : ''));
   },
   /* 最近一次导入的批号（设置里显示「撤销」） */
