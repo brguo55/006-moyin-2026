@@ -271,8 +271,10 @@ const Tasks = {
     if (q) ts = ts.filter(t => [t.title, t.notes, ...(t.tags || []).map(g => '#' + g)].join(' ').toLowerCase().includes(q));
     else if (this.view === 'today') ts = ts.filter(t => t.done ? dayKey(new Date(t.doneAt)) === today : (t.due && t.due <= today));
     else if (this.view !== 'all') ts = ts.filter(t => t.listId === this.view);
-    const key = t => (t.due || '9999') + ' ' + (t.time || '99:99');   // 先按日期，同一天有时间的按时间排在前面
-    const undone = ts.filter(t => !t.done).sort((a, b) => key(a) < key(b) ? -1 : key(a) > key(b) ? 1 : a.createdAt - b.createdAt);
+    // 先按日期，同一天有时间的按时间排在前面；排序键每个任务只拼一次（比较的时候不用一直重拼）
+    const key = new Map();
+    for (const t of ts) if (!t.done) key.set(t, (t.due || '9999') + ' ' + (t.time || '99:99'));
+    const undone = [...key.keys()].sort((a, b) => { const ka = key.get(a), kb = key.get(b); return ka < kb ? -1 : ka > kb ? 1 : a.createdAt - b.createdAt; });
     const done = ts.filter(t => t.done).sort((a, b) => b.doneAt - a.doneAt);
     return { undone, done };
   },
