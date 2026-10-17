@@ -9,9 +9,11 @@ const snapS = v => Math.round(v * DPR) / DPR;
 function fillR(x, y, w, h, col){ ctx.fillStyle = col; ctx.fillRect(x, y, w, h); }
 
 /* ---------- 背景：带一点主题色的纸 + 淡淡的点阵（像方格本） ---------- */
-let bgPat = null, bgPatDpr = 0;
+let bgPat = null, bgPatDpr = 0, bgWash = null, bgCol = '';
 function drawBackground(){
-  fillR(0, 0, W, H, rgbHex(lerpC(PAPER, curWash(), 0.22)));
+  const w = curWash();   // 换主题时每帧都是新的颜色；平时就是同一个，纸色不用每帧重算
+  if (w !== bgWash){ bgWash = w; bgCol = rgbHex(lerpC(PAPER, w, 0.22)); }
+  fillR(0, 0, W, H, bgCol);
   if (!bgPat || bgPatDpr !== DPR){
     const u = Math.max(1, Math.round(2 * DPR)), c = pxCanvas(u * 8, u * 8), g = c.getContext('2d');
     g.fillStyle = 'rgba(62,48,38,0.10)'; g.fillRect(0, 0, u, u);
