@@ -108,7 +108,8 @@ function scrollCard({ title, body, wide = false, closable = true, focus = null, 
   const x = closable ? h('button.dlg-x', { title: '关上', 'aria-label': '关上' }, '×') : null;
   const paper = h('div.dlg-paper', null, h('div.dlg-inner', null,
     h('div.dlg-head', null, h('h3.dlg-title', { id: tid }, title), x), ...[].concat(body)));
-  const box = h('div.dlg' + (wide ? '.wide' : ''), { role: 'dialog', 'aria-modal': 'true', 'aria-labelledby': tid },
+  // tabindex -1：点到纸上没有按钮的地方，焦点停在卷轴上（不会掉回页面上，Esc、Tab 照样管用，按键也不会去操控 rabbit）
+  const box = h('div.dlg' + (wide ? '.wide' : ''), { role: 'dialog', 'aria-modal': 'true', 'aria-labelledby': tid, tabindex: '-1' },
     dlgBird(), h('div.dlg-rod'), paper, h('div.dlg-rod'));
   const back = h('div.dlg-back', null, box);
   let closed = false;
@@ -128,10 +129,10 @@ function scrollCard({ title, body, wide = false, closable = true, focus = null, 
     if (e.isComposing) return;
     if (e.key === 'Escape'){ e.preventDefault(); close(); }
     else if (e.key === 'Tab'){   // Tab 只在卷轴里转
-      const fs = [...paper.querySelectorAll('button:not([disabled]), input, select, textarea')], i = fs.indexOf(document.activeElement);
-      if (!fs.length) return;
+      const fs = [...paper.querySelectorAll('button:not([disabled]), input, select, textarea')], i = fs.indexOf(document.activeElement), n = fs.length;
+      if (!n) return;
       e.preventDefault();
-      fs[(i + (e.shiftKey ? fs.length - 1 : 1) + fs.length) % fs.length].focus();
+      fs[i < 0 ? (e.shiftKey ? n - 1 : 0) : (i + (e.shiftKey ? n - 1 : 1)) % n].focus();   // 焦点在卷轴本身上时：Tab 到第一个，Shift+Tab 到最后一个
     }
   });
   back.addEventListener('keyup', e => e.stopPropagation());
