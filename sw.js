@@ -3,7 +3,7 @@
    （改了文件不用手动改版本号；下次打开就是新版。只有增删文件时才需要改 SHELL）
    用户数据在 IndexedDB 里，与这里的缓存无关，清缓存不会丢数据。
    ============================================================ */
-const CACHE = 'tingyu-rabbit-v21';
+const CACHE = 'tingyu-rabbit-v22';
 const SHELL = [
   './', 'index.html', 'manifest.webmanifest',
   'css/stage.css', 'css/app.css',
