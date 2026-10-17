@@ -96,9 +96,9 @@ const Pomo = {
     t.running = false;
     this._save(); this.refresh();
   },
-  /* 重置：番茄钟回到这一轮的开头（循环数清零） */
+  /* 重置：番茄钟回到这一轮的开头（循环数清零；长休息也重新数，重置后的第一次休息是短的） */
   reset(){
-    Object.assign(this.t, { running: false, mode: 'focus', startedAt: 0, round: 0, watchAcc: 0 });
+    Object.assign(this.t, { running: false, mode: 'focus', startedAt: 0, round: 0, cycle: 0, watchAcc: 0 });
     this.t.left = this.dur();
     this._save(); this.refresh();
   },
@@ -110,7 +110,7 @@ const Pomo = {
   /* 换计时方式（番茄钟 / 计时器 / 正计时）：只能在没走的时候换 */
   setKind(kind){
     if (this.t.running) return;
-    Object.assign(this.t, { kind, mode: 'focus', startedAt: 0, round: 0, watchAcc: 0 });
+    Object.assign(this.t, { kind, mode: 'focus', startedAt: 0, round: 0, cycle: 0, watchAcc: 0 });
     this.t.left = this.dur();
     this._save(); this.refresh();
   },
