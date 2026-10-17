@@ -58,16 +58,16 @@ cv.addEventListener('pointerleave', () => { Room.hover = null; });
 /* ---------- 键盘 ---------- */
 /* 正在面板的输入框里打字时，不触发快捷键 */
 const typing = e => { const t = e.target; return t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName)); };
-window.addEventListener('keydown', e => { initAudio(); wake(); });
-// 屏蔽浏览器缩放快捷键（⌘/Ctrl + +/−/0）：画面已按视口自适应
-window.addEventListener('keydown', e => {
-  if ((e.metaKey || e.ctrlKey) &&
-      (e.key === '+' || e.key === '=' || e.key === '-' || e.key === '_' || e.key === '0' ||
-       e.key === ')' || e.key === '(')) e.preventDefault();
-});
+const ZOOM_KEYS = new Set(['+', '=', '-', '_', '0', ')', '(']);
+// 一按键：开声音（浏览器要先有操作）、回到每帧都画；
 // A / D 走、空格跳、S 从家具上下来、E 互动、M 静音（用 e.code：中文输入法开着也认得）
 window.addEventListener('keydown', e => {
-  if (e.metaKey || e.ctrlKey || e.altKey || typing(e)) return;
+  initAudio(); wake();
+  if (e.metaKey || e.ctrlKey){
+    if (ZOOM_KEYS.has(e.key)) e.preventDefault();   // 屏蔽浏览器缩放快捷键（⌘/Ctrl + +/−/0）：画面已按视口自适应
+    return;
+  }
+  if (e.altKey || typing(e)) return;
   if (sceneMode !== 'hidden'){   // 面板铺满窗口、场景被挡住时，按键不去操控 rabbit（空格留给面板里的按钮）
     if (e.repeat && e.code === 'Space') { e.preventDefault(); return; }   // 按住不放不算连跳
     if (Room.keyDown(e.code)) { e.preventDefault(); return; }
