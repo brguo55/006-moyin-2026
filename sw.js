@@ -3,7 +3,7 @@
    （改了文件不用手动改版本号；下次打开就是新版。只有增删文件时才需要改 SHELL）
    用户数据在 IndexedDB 里，与这里的缓存无关，清缓存不会丢数据。
    ============================================================ */
-const CACHE = 'tingyu-rabbit-v20';
+const CACHE = 'tingyu-rabbit-v21';
 const SHELL = [
   './', 'index.html', 'manifest.webmanifest',
   'css/stage.css', 'css/app.css',
@@ -30,7 +30,9 @@ self.addEventListener('activate', e => {
 const FONT_HOST = 'cdn.jsdelivr.net';
 self.addEventListener('fetch', e => {
   const req = e.request;
-  if (req.method === 'GET' && new URL(req.url).host === FONT_HOST && req.url.includes('fusion-pixel')){
+  if (req.method !== 'GET') return;
+  const url = new URL(req.url);
+  if (url.host === FONT_HOST && url.pathname.includes('fusion-pixel')){
     e.respondWith(caches.open(CACHE).then(async cache => {
       const hit = await cache.match(req);
       if (hit) return hit;
@@ -40,7 +42,7 @@ self.addEventListener('fetch', e => {
     }));
     return;
   }
-  if (req.method !== 'GET' || new URL(req.url).origin !== location.origin) return;
+  if (url.origin !== location.origin) return;
   e.respondWith(caches.open(CACHE).then(async cache => {
     const hit = await cache.match(req, { ignoreSearch: true });
     const fresh = fetch(req).then(res => {
