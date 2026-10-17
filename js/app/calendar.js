@@ -52,14 +52,14 @@ const Calendar = {
     const k = this.sel, dt = keyToDate(k), today = dayKey(), term = termAt(k), d = Store.data;
     const nth = Math.round((dt - keyToDate(term.day)) / 864e5) + 1;
     const tasks = d.tasks.filter(t => t.due === k).sort((a, b) => (a.time || '99') < (b.time || '99') ? -1 : 1);
-    const diary = d.diary[k];
+    const diary = d.diary[k], chars = diary ? [...diary.text.trim()] : [];   // 按字数（表情符号算一个字，不会被切成半个）
     const canDiary = k <= today && tabShown('diary');
     return h('div.cal-detail', null,
       h('div.cal-date', null, `${dt.getMonth() + 1}月${dt.getDate()}日 · 周${WEEK[dt.getDay()]}`,
         h('span.cal-tterm', null, nth === 1 ? `${term.name}（今天交节）` : `${term.name} · 第 ${nth} 天`)),
       tasks.length ? h('ul.cal-tasks', null, ...tasks.map(t => h('li' + (t.done ? '.done' : ''), null, (t.time ? t.time + ' ' : '') + t.title)))
         : h('div.muted.small', null, '这天没有任务。'),
-      diary ? h('div.cal-diary-line', null, '日记：' + (diary.text.trim().slice(0, 40) || '（只选了心情）') + (diary.text.trim().length > 40 ? '……' : '')) : null,
+      diary ? h('div.cal-diary-line', null, '日记：' + (chars.slice(0, 40).join('') || '（只选了心情）') + (chars.length > 40 ? '……' : '')) : null,
       canDiary ? h('div.btn-row', null, h('button.btn.small', { onclick: () => {
         this.card.close(); App.showTab('diary'); Diary.open(k);
       } }, diary ? '看这天的日记' : '写这天的日记')) : null);
