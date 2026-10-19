@@ -76,7 +76,7 @@ const Backup = {
       this.perm = 'granted';
       this.info.folder = dir.name;
       await this.writeFolder(true);
-      toast(`已开启自动备份：${dir.name}`);
+      toast(this.error ? `已选好「${dir.name}」，但第一次备份没写进去：${this.error}` : `已开启自动备份：${dir.name}`);   // 写失败时不能说「开启了」
     } catch (e){
       if (e.name !== 'AbortError') toast('没能使用这个文件夹：' + e.message);
     }

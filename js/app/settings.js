@@ -37,7 +37,7 @@ const Settings = {
         B.perm === 'granted' ? (B.error ? h('span.warn', null, ` · 出错：${B.error}`) : h('span.ok', null, ' · 正常')) : h('span.warn', null, ' · 需要重新授权')));
       if (B.perm === 'prompt') folder.push(h('button.btn.primary', { onclick: () => B.reconnect() }, '重新连接文件夹'));
       folder.push(h('div.btn-row', null,
-        B.perm === 'granted' ? h('button.btn', { onclick: async () => { await B.writeFolder(true); toast('已备份'); } }, '立即备份') : null,
+        B.perm === 'granted' ? h('button.btn', { onclick: async () => { await B.writeFolder(true); toast(B.error ? '备份失败：' + B.error : '已备份'); } }, '立即备份') : null,
         B.perm === 'granted' ? h('button.btn.ghost', { onclick: () => B.restoreFromFolder() }, '从文件夹恢复') : null,
         h('button.btn.ghost', { onclick: () => B.chooseFolder() }, '换一个文件夹'),
         h('button.btn.ghost', { onclick: async () => {
