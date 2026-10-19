@@ -1,9 +1,11 @@
 /* ============================================================
    sw.js：离线缓存 —— 先用缓存秒开，同时在后台取最新版本更新缓存
    （改了文件不用手动改版本号；下次打开就是新版。只有增删文件时才需要改 SHELL）
+   GitHub Pages 让浏览器把文件留 10 分钟（max-age=600）：这里取文件都绕过那一层，跟服务器核对一下（没改就回 304，很快），
+   不然刚发布完的那 10 分钟里，新版的缓存会装进旧文件，打开还是旧的
    用户数据在 IndexedDB 里，与这里的缓存无关，清缓存不会丢数据。
    ============================================================ */
-const CACHE = 'tingyu-rabbit-v22';
+const CACHE = 'tingyu-rabbit-v23';
 const SHELL = [
   './', 'index.html', 'manifest.webmanifest',
   'css/stage.css', 'css/app.css',
@@ -18,7 +20,7 @@ const SHELL = [
 ];
 
 self.addEventListener('install', e => {
-  e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)).then(() => self.skipWaiting()));
+  e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL.map(u => new Request(u, { cache: 'reload' })))).then(() => self.skipWaiting()));
 });
 /* 只清自己的旧缓存：同一个 github.io 域名下的别的网页（比如天气模拟器）也用这块地方，不能动它们的 */
 self.addEventListener('activate', e => {
@@ -45,7 +47,7 @@ self.addEventListener('fetch', e => {
   if (url.origin !== location.origin) return;
   e.respondWith(caches.open(CACHE).then(async cache => {
     const hit = await cache.match(req, { ignoreSearch: true });
-    const fresh = fetch(req).then(res => {
+    const fresh = fetch(req.url, { cache: 'no-cache' }).then(res => {
       if (res.ok) cache.put(req, res.clone());
       return res;
     }).catch(() => hit);
