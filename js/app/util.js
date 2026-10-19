@@ -62,10 +62,12 @@ const rgb = (c, a = 1) => `rgba(${c[0]},${c[1]},${c[2]},${a})`;
 
 const mmss = ms => { const s = Math.max(0, Math.ceil(ms / 1000)); return `${pad2(Math.floor(s / 60))}:${pad2(s % 60)}`; };
 
-/* 轻提示（右下角一张小纸条，几秒后消失） */
+/* 轻提示（左下角一张小纸条，几秒后消失）；同时有好几张（比如刚打开时的提醒和番茄钟）就往上叠，不互相盖住 */
+let toastBox = null;
 function toast(msg){
+  if (!toastBox || !toastBox.isConnected) document.body.append(toastBox = h('div.toasts'));
   const el = h('div.toast', null, msg);
-  document.body.append(el);
+  toastBox.append(el);
   requestAnimationFrame(() => el.classList.add('show'));
   setTimeout(() => { el.classList.remove('show'); setTimeout(() => el.remove(), 400); }, 2600);
 }
